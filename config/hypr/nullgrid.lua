@@ -24,6 +24,7 @@ hl.config({
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         focus_on_activate = true,
+        allow_session_lock_restore = true,  -- a crashed lock screen can be started again
     },
     ecosystem = { no_update_news = true, no_donation_nag = true },
 })
@@ -39,8 +40,9 @@ hl.window_rule({
     name = "nullgrid-welcome",
     match = { class = "^nullgrid-welcome$" },
     float = true,
-    size = "52% 60%",
-    move = "17% 20%",
+    -- expressions, not percentages: "44% 58%" passes --verify-config but is silently ignored
+    size = "monitor_w*0.44 monitor_h*0.58",
+    move = "monitor_w*0.15 monitor_h*0.18",
 })
 
 -- NULLGRID's own popups open floating and centered.
@@ -52,10 +54,10 @@ hl.window_rule({
     center = true,
 })
 
--- Blur behind the launcher and the notifications.
+-- Blur behind the launcher and the shell's bar, dock, menu and notifications.
 hl.layer_rule({
     name = "nullgrid-blur",
-    match = { namespace = "^(launcher|notifications)$" },
+    match = { namespace = "^(launcher|nullgrid-(bar|dock|menu|notifications))$" },
     blur = true,
     ignore_alpha = 0.2,
 })
@@ -64,6 +66,7 @@ hl.on("hyprland.start", function()
     -- D-Bus activated services (notifications, portals) need to find this session.
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("nullgrid wallpaper apply --quiet")
+    hl.exec_cmd("nullgrid-shell")  -- bar, dock, HUD widgets, start menu, notifications
 end)
 -- A new screen gets a wallpaper rendered for its size.
 hl.on("monitor.added", function()

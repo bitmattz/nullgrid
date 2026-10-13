@@ -1,0 +1,18 @@
+#!/bin/sh
+# nullgrid-shell [menu|status|restart|log]
+# Start the NULLGRID desktop shell (Quickshell: bar, dock, HUD widgets, start menu,
+# notifications), or talk to the running one. The shell lives in /etc/xdg/quickshell/nullgrid/;
+# a copy in ~/.config/quickshell/nullgrid/ takes precedence (and reloads as you edit it).
+set -eu
+qs() { quickshell -c nullgrid "$@"; }
+# Without a GPU with 3D (nullgrid-session sets this), Qt's own software renderer beats OpenGL on
+# llvmpipe by far: about 100 MB instead of 500 MB, and less CPU per redraw.
+[ "${NULLGRID_SOFTWARE_RENDER:-}" = 1 ] && export QT_QUICK_BACKEND=software
+case ${1:-} in
+    "") exec quickshell -c nullgrid --no-duplicate --daemonize ;;
+    menu) exec quickshell -c nullgrid ipc call shell toggleMenu ;;
+    status) exec quickshell -c nullgrid ipc call shell status ;;
+    restart) qs kill >/dev/null 2>&1 || true; exec quickshell -c nullgrid --no-duplicate --daemonize ;;
+    log) exec quickshell -c nullgrid log ;;
+    *) echo "usage: nullgrid-shell [menu|status|restart|log]" >&2; exit 2 ;;
+esac

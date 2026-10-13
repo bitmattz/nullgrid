@@ -49,15 +49,9 @@ template = "hyprlock.conf.j2"
 target = "{config_home}/hypr/nullgrid-hyprlock.conf"
 
 [quickshell]
-# Quickshell watches this file and restyles the shell UI on change.
+# The desktop shell (shell/, nullgrid-shell) watches this file and restyles on change.
 template = "theme.json.j2"
 target = "{config_dir}/generated/theme.json"
-
-[mako]
-template = "mako.conf.j2"
-target = "{config_home}/mako/config"
-process = "mako"
-reload = ["makoctl", "reload"]
 
 [fuzzel]
 template = "fuzzel.ini.j2"

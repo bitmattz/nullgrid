@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-13: Phase 4 DONE, next is Phase 5
+### Status as of 2026-10-13: Phase 5 DONE, next is Phase 6
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -314,10 +314,40 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - Fast VM debugging: a scratch harness that boots the ISO with serial + monitor and takes
   commands from files (see phase-4 session) beats re-running the whole boot test.
 
-**Next step, Phase 5 (shell UI, Quickshell):** dock (left), status bar (bottom), HUD widgets
-(bottom right: RAM gauge, net graph, CPU bars, workspace strip, activity grid), start menu,
-notifications (mako or Quickshell), hyprlock HUD, the animated matrix overlay (respect
-`reduce_motion`). Quickshell reads `~/.config/nullgrid/generated/theme.json` (already generated).
-Autostart it from `/usr/share/nullgrid/hypr/nullgrid.lua` and the Sway defaults. Check that
-Quickshell is in Arch's repos (else package it in `pkg/`). Keep the wallpaper's text blocks
-clear of the widget areas (docs/STYLE.md).
+**Phase 5 delivered:**
+- `shell/` = Quickshell 0.3.2 config, installed to `/etc/xdg/quickshell/nullgrid/` (`qs -c nullgrid`;
+  user copy in `~/.config/quickshell/nullgrid/` wins). Singletons: `Theme` (watches theme.json),
+  `Sys` (/proc + /sys readings), `Wm` (Hyprland/Sway workspaces), `Ui` (menu state, pinned apps),
+  `Backlight`, `Running`. Panels: `Bar`, `Dock`, `Hud` (one per [widgets] position) with
+  `RamGauge/CpuBars/NetGraph/ActivityGrid/WorkspaceStrip`, `StartMenu`, `Notifications`
+  (the notification daemon; mako removed), `MatrixRain`. Primitives `Chamfer`, `Hatch`,
+  `NgIcon` (+ `Icons.js` SVG paths), `NgText`, `LatticeLogo`. IpcHandler target `shell`.
+- `nullgrid-shell [menu|status|restart|log]`; autostarted by the Hyprland and Sway defaults.
+  Keybind action `start_menu` (SUPER+SPACE). hyprlock HUD in skel `hypr/hyprlock.conf`;
+  wallpaper keeps `~/.cache/nullgrid/wallpaper/current.png`. Live user password is empty
+  (`nullgrid-live-password.service`) so Enter unlocks.
+- `make test-shell` (tests/shell_smoke.sh): headless Sway + shell in the builder; boot test checks
+  the shell over IPC, menu, notifications, lock/unlock. All packages 0.5.0 (fonts/base unchanged).
+
+**Gotchas learned (phase 5):**
+- QML: a property named `on...` is a signal handler (`onBattery` broke loading); `top` is a FINAL
+  Item property; in `ShapePath` children, `parent` is not the ShapePath (use ids/root props);
+  no `;` after a grouped property block (`anchors { ... };`).
+- Inside `HudPanel`, content is reparented: use ids, not `parent.parent`.
+- `FileView` needs `blockLoading: true` to read /proc synchronously after `reload()`.
+- A zombie swaybg still reads as `swaybg` in /proc/PID/comm: check the state in /proc/PID/stat.
+- Hyprland Lua window rules: `size`/`move` take expressions (`"monitor_w*0.44 monitor_h*0.58"`);
+  percentages pass `--verify-config` but are silently ignored. Check with `hyprctl clients`.
+- hyprlock + an empty password never unlocks (PAM succeeds without asking). Never `kill -9`
+  hyprlock in tests: Hyprland then shows its "lockscreen app died" screen.
+- Under software rendering (VMs without 3D) every frame costs CPU: no continuous animations
+  there (NULLGRID_SOFTWARE_RENDER), and Quickshell uses QT_QUICK_BACKEND=software (5x less RAM).
+- Shell test loop: `tests/shell_smoke.sh` pattern (dbus-run-session, sway copy without caps,
+  `WLR_BACKENDS=headless WLR_RENDERER=pixman`, grim) gives screenshots in seconds.
+
+**Next step, Phase 6 (sound):** `assets/sounds/generate.py` (numpy synthesis; numpy must be added
+to the builder) -> packs `neural-link` and `minimal-ops` with `pack.toml`; `nullgrid-sfx` daemon
+(pw-play; PipeWire + WirePlumber join the ISO); hooks: Hyprland event socket, udev, UPower
+D-Bus, the shell's NotificationServer (Notifications.qml can call `nullgrid-sfx` or a socket),
+zsh precmd for command done/failed; `nullgrid sound list|set|test|mute`; quiet hours and
+per-event volume from `[sound]`. Then verify cava (needs PipeWire) and the bar's volume toggle.

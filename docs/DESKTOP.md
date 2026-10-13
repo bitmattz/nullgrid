@@ -1,9 +1,9 @@
 # The desktop
 
 Logging in on tty1 starts the desktop when `nullgrid mode` is `desktop` (the default). It's a
-Hyprland session with neon window borders and a generated HUD wallpaper. Sway takes over on
-GPUs where Hyprland can't start, and when `[performance] profile = "lite"` is set. The dock,
-status bar and HUD widgets arrive in phase 5.
+Hyprland session with neon window borders, a generated HUD wallpaper, and the NULLGRID shell:
+status bar, dock, HUD widgets, start menu and notifications. Sway takes over on GPUs where
+Hyprland can't start, and when `[performance] profile = "lite"` is set.
 
 ## Keybinds
 
@@ -13,13 +13,14 @@ defaults:
 | Keys | Action |
 |---|---|
 | `SUPER+ENTER` | terminal (kitty) |
+| `SUPER+SPACE` | start menu |
 | `SUPER+D` | app launcher (fuzzel) |
 | `SUPER+E` | file manager (yazi) |
 | `` SUPER+` `` | system dashboard |
 | `SUPER+B` | btop |
 | `SUPER+/` | show keybinds |
 | `SUPER+T` | next theme |
-| `SUPER+CTRL+L` | lock screen |
+| `SUPER+CTRL+L` | lock screen (on the live ISO the password is `nullgrid`; the lock screen says so) |
 | `PRINT` / `SHIFT+PRINT` | screenshot of a region / the screen, saved to `~/Pictures/Screenshots` and copied |
 | `SUPER+Q` | close window |
 | `SUPER+F` / `SUPER+V` | fullscreen / float or tile |
@@ -60,6 +61,47 @@ launcher = []                   # unbound
 Combos are modifiers (`SUPER SHIFT CTRL ALT`) plus one xkb key name (`Return`, `Left`,
 `slash`, `F1`, `Print`...). A combo bound twice is an error that names both places.
 
+## The shell
+
+The shell is a [Quickshell](https://quickshell.org) config (QML) in
+`/etc/xdg/quickshell/nullgrid/` (`shell/` in the repo). The session starts it with
+`nullgrid-shell`. It takes its colors, fonts and layout from
+`~/.config/nullgrid/generated/theme.json` and restyles as soon as `nullgrid theme ...` changes it.
+
+- **Status bar** (bottom): mode and profile, workspaces, window title, now playing (MPRIS), tray,
+  quick toggles (Wi-Fi, Bluetooth, brightness, volume: click toggles, scroll adjusts), CPU, RAM,
+  GPU, network down/up, CPU/GPU temperature, battery and power draw, date and time. Readings that
+  the hardware doesn't have are left out.
+- **Dock** (left): the start button, then pinned apps (terminal, files, editor, monitor,
+  dashboard, settings) as circular buttons. The focused app's button is hatched, and a dot
+  marks running ones. Below: a dot per workspace and the current workspace's number.
+- **HUD widgets** (bottom right, under the windows): RAM gauge, CPU per-core bars with load
+  average, network graph with its scale, CPU activity dot matrix, and the workspace strip.
+- **Start menu** (`SUPER+SPACE` or the dock's top button): type to search, arrows and Enter to
+  launch, Esc to close. Categories on the left, favorites by default. At the bottom: lock, log
+  out, sleep, restart and shut down. Log out, restart and shut down ask for a second click.
+- **Notifications**: chamfered cards in the top right corner. Critical ones are red and stay
+  until clicked; the others go after 6 s (or the sender's timeout). Hovering keeps them.
+- **Matrix rain**: a few falling character columns over the wallpaper (`decor.matrix_rain`).
+  Off with `reduce_motion` and with the lite profile.
+- **Lock screen**: hyprlock, as a "system locked" HUD over the blurred wallpaper.
+  `~/.config/hypr/hyprlock.conf` is yours; its colors come from the generated
+  `nullgrid-hyprlock.conf`.
+
+Show or hide parts with `nullgrid widget toggle <name>`, and move them with `position` in
+`[widgets]`: the bar `top`/`bottom`, the dock `left`/`right`, and each HUD widget any of the
+eight positions. Widgets at the same position stack together.
+
+```sh
+nullgrid-shell menu      # open/close the start menu
+nullgrid-shell status    # what the running shell sees
+nullgrid-shell restart   # e.g. after changing the QML
+nullgrid-shell log       # its log
+```
+
+To change the shell itself, copy it and edit: `cp -r /etc/xdg/quickshell/nullgrid
+~/.config/quickshell/`. Your copy wins, and Quickshell reloads it on every save.
+
 ## Configs
 
 | File | Who writes it | |
@@ -84,16 +126,17 @@ includes:
 - optional scanlines (`scanlines`);
 - always: the NULLGRID logo plate (top right), a dot grid, and a large faint lattice behind the windows.
 
-The logo plate, data blocks and keymap stay out of the areas where the phase 5 dock, bar and
-HUD widgets go.
+The logo plate, data blocks and keymap stay out of the areas where the dock, bar and HUD
+widgets go.
 
 ```sh
 nullgrid wallpaper apply                        # render for every screen and show it (swaybg)
 nullgrid wallpaper render --size 2560x1440 -o wall.png   # or .svg, or SVG to stdout
 ```
 
-`nullgrid theme set` re-renders it on the fly. Renders are cached in `~/.cache/nullgrid/wallpaper/`.
-The animated layer (moving matrix columns) comes with the Quickshell overlay in phase 5.
+`nullgrid theme set` re-renders it on the fly. Renders are cached in `~/.cache/nullgrid/wallpaper/`;
+`current.png` there links to the one in use (the lock screen shows it). The moving matrix
+columns are drawn by the shell.
 
 ## Sessions
 

@@ -59,7 +59,8 @@ error lock unlock terminal_bell command_done command_failed`. Off by default: `w
 
 `dock bar ram_gauge net_graph cpu_bars workspace_strip activity_grid`, each
 `{ visible = bool, position = "..." }` with positions `top bottom left right top-left top-right
-bottom-left bottom-right`.
+bottom-left bottom-right`. The bar goes `top` or `bottom`, the dock `left` or `right`; HUD
+widgets that share a position stack together. The shell applies changes at once.
 
 ### `[decor]`, `[behavior]`, `[performance]`
 
@@ -102,8 +103,7 @@ selection color0`..`color15`). `[fonts]` and `[style]` are optional (defaults as
 | sway / sway-keys | `~/.config/sway/nullgrid-theme` / `nullgrid-keys` | yes (`swaymsg reload`) |
 | wallpaper | `~/.config/nullgrid/generated/wallpaper.json` (the wallpaper's input) | yes (`nullgrid wallpaper apply`) |
 | hyprlock | `~/.config/hypr/nullgrid-hyprlock.conf` | read at each lock |
-| quickshell | `~/.config/nullgrid/generated/theme.json` | yes (file is watched) |
-| mako | `~/.config/mako/config` | yes (`makoctl reload`) |
+| quickshell | `~/.config/nullgrid/generated/theme.json` (the desktop shell's look and layout) | yes (file is watched) |
 | fuzzel | `~/.config/fuzzel/fuzzel.ini` | read at each launch |
 | btop | `~/.config/btop/themes/nullgrid.theme` | at next start |
 | nvim | `~/.config/nvim/lua/nullgrid/palette.lua` | at next start |

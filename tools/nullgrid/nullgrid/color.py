@@ -40,7 +40,7 @@ class Color:
         return f"{self.r}, {self.g}, {self.b}"
 
     def hexa(self, alpha: float = 1.0) -> str:
-        """'#rrggbbaa' (mako, CSS)"""
+        """'#rrggbbaa' (CSS, hyprlock)"""
         return self.hex + _byte(alpha)
 
     def barea(self, alpha: float = 1.0) -> str:

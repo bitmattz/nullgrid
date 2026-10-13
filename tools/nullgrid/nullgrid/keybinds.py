@@ -35,6 +35,7 @@ PREFIX = re.compile(rf"{_MOD}(?:\+{_MOD})*")
 # without one are compositor actions that each compositor template implements.
 ACTIONS: dict[str, tuple[str, str | None]] = {
     "terminal": ("terminal", "kitty"),
+    "start_menu": ("start menu", "nullgrid-shell menu"),
     "launcher": ("app launcher", "fuzzel"),
     "files": ("file manager", "kitty --class nullgrid-files yazi"),
     "dashboard": ("system dashboard", "kitty --class nullgrid-dash nullgrid-dash"),
@@ -186,7 +187,7 @@ def summary(data: dict) -> list[tuple[str, str, str]]:
 
 
 # What the wallpaper's keymap block shows, in this order (actions the set leaves unbound are skipped).
-ESSENTIALS = ("terminal", "launcher", "files", "dashboard", "keys_help", "theme_next", "close",
+ESSENTIALS = ("terminal", "start_menu", "launcher", "files", "dashboard", "keys_help", "theme_next", "close",
               "workspace", "lock", "exit")
 
 

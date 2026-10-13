@@ -12,7 +12,7 @@ from nullgrid import config, render
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 UPDATE = os.environ.get("NULLGRID_UPDATE_SNAPSHOTS") == "1"
 ALL_TARGETS = {"kitty", "hyprland", "hyprland-keys", "sway", "sway-keys", "wallpaper", "hyprlock",
-               "quickshell", "mako", "fuzzel", "btop", "nvim", "gtk", "qt", "tty", "shell-env", "starship",
+               "quickshell", "fuzzel", "btop", "nvim", "gtk", "qt", "tty", "shell-env", "starship",
                "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty", "lazygit", "cava", "cava-tty", "banner"}
 N = len(ALL_TARGETS)
 SHARED_RELOADS = 2  # hyprland + hyprland-keys, sway + sway-keys: one reload each
@@ -99,18 +99,18 @@ def test_hand_edits_are_backed_up(paths):
 
 
 def test_foreign_file_is_backed_up(paths):
-    mako = paths.config_home / "mako" / "config"
-    mako.parent.mkdir(parents=True)
-    mako.write_text("my own mako config\n")
+    fuzzel = paths.config_home / "fuzzel" / "fuzzel.ini"
+    fuzzel.parent.mkdir(parents=True)
+    fuzzel.write_text("my own fuzzel config\n")
     report = render.apply(config.load(paths), paths)
-    assert mako.with_name("config.bak").read_text() == "my own mako config\n"
-    assert mako in [b.with_name("config") for b in report.backups]
+    assert fuzzel.with_name("fuzzel.ini.bak").read_text() == "my own fuzzel config\n"
+    assert fuzzel in [b.with_name("fuzzel.ini") for b in report.backups]
 
 
 def test_template_error_writes_nothing(paths):
     paths.user_templates.mkdir(parents=True)
-    (paths.user_templates / "mako.conf.j2").write_text("{{ c.no_such_color }}\n")
-    with pytest.raises(render.RenderError, match="mako"):
+    (paths.user_templates / "fuzzel.ini.j2").write_text("{{ c.no_such_color }}\n")
+    with pytest.raises(render.RenderError, match="fuzzel"):
         render.apply(config.load(paths), paths)
     assert not (paths.config_home / "kitty").exists()
 
@@ -185,7 +185,7 @@ def test_generated_toml_and_json_parse(paths):
     _, out = rendered(paths)
     for name in ("starship", "starship-tty", "yazi", "yazi-tty"):
         tomllib.loads(out[name])
-    json.loads("\n".join(l for l in out["fastfetch"].splitlines() if not l.startswith("//")))
+    json.loads("\n".join(l for l in out["fastfetch"].splitlines() if not l.lstrip().startswith("//")))  # JSONC
     json.loads(out["quickshell"])
     json.loads(out["wallpaper"])
 

@@ -2,6 +2,7 @@
 -- Customize ~/.config/nullgrid/nullgrid.toml or override the template instead.
 -- Keybind set "default" (behavior.keybinds in nullgrid.toml). `nullgrid keys` lists it.
 hl.bind("SUPER + Return", hl.dsp.exec_cmd("kitty"))
+hl.bind("SUPER + space", hl.dsp.exec_cmd("nullgrid-shell menu"))
 hl.bind("SUPER + D", hl.dsp.exec_cmd("fuzzel"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd("kitty --class nullgrid-files yazi"))
 hl.bind("SUPER + grave", hl.dsp.exec_cmd("kitty --class nullgrid-dash nullgrid-dash"))

@@ -159,14 +159,14 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   columns skip the text blocks so those stay readable.
 - **The keymap on the wallpaper is real data.** It lists the essential binds of the active set.
   A new user sees where to start without a cheat sheet, and decoration earns its place.
-- **The login terminal floats.** It's `kitty --class nullgrid-welcome`, at 52% x 60%, left of
-  center. A tiled terminal would cover the whole HUD on first login. `SUPER+V` tiles it.
+- **The login terminal floats.** It's `kitty --class nullgrid-welcome`, at 44% x 58%, left of
+  center (phase 5 made it smaller, clear of the HUD widgets). A tiled terminal would cover the whole HUD on first login. `SUPER+V` tiles it.
 - **Logo from one geometry.** `nullgrid/logo.py` holds the lattice (4x4, hole at 2.2) and draws it
   as ASCII (the fastfetch logo, byte-identical to phase 3; a test guards it), as SVG, and as
   a group inside the wallpaper. The SVG is also the `nullgrid` icon that os-release's `LOGO=` names.
 - **Package `nullgrid-desktop`**: the session scripts, compositor defaults, logo files and a
   `wayland-sessions` entry (for the phase 7 greeter). It depends on hyprland, sway, swaybg,
-  librsvg, fuzzel, mako, hyprlock, grim, slurp, wl-clipboard and libnotify. All packages are 0.4.0.
+  librsvg, fuzzel, mako (removed in phase 5), hyprlock, grim, slurp, wl-clipboard and libnotify. All packages are 0.4.0.
 - **Measured in the boot test VM** (4 GB, virtio-gpu without 3D, so llvmpipe): about 700-750 MB
   used at idle on Hyprland and 550-620 MB on Sway, and 0% CPU at idle. Software GL inflates
   Hyprland (237 MB RSS) and kitty (178 MB). Xwayland starts eagerly (61 MB). Phase 9 measures on
@@ -174,6 +174,62 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 - **Gotcha: zsh `print -P` runs command substitutions** once starship has turned on
   `prompt_subst`. A backticked command name in a message started the desktop a second time.
   Messages printed with `print -P` must not contain backticks or `$(...)`.
+
+## Phase 5
+
+- **Quickshell from Arch's repos** (0.3.2), installed as the config `/etc/xdg/quickshell/nullgrid/`
+  so `qs -c nullgrid` runs it and a user copy in `~/.config/quickshell/nullgrid/` takes over
+  without touching system files. `nullgrid-shell` starts it (`--no-duplicate --daemonize`) and
+  wraps its IPC (`menu`, `status`, `restart`, `log`).
+- **One QML tree for Hyprland and Sway.** `Wm.qml` hides the difference: workspaces come from
+  Quickshell's Hyprland or I3 module, and switching uses Hyprland's Lua dispatch
+  (`Hyprland.usingLua`) or `workspace number N` on Sway.
+- **Readings straight from /proc and /sys** (`Sys.qml`), no helper process per tick: CPU (per
+  core), memory, swap, network, load, uptime, plus sensor files found once at startup (hwmon
+  CPU/GPU temperature, amdgpu busy %, battery). The interval is `refresh_ms` (1 s, 3 s on lite).
+  Values a machine doesn't have are hidden, not shown as zero.
+- **The shell is the notification daemon** (Quickshell's NotificationServer) and **mako is gone**:
+  mako can't draw chamfered cards, and the shell will also be where phase 6 hooks the
+  notification sounds. Its template and package were removed.
+- **Icons are SVG path strings** (`shell/Icons.js`, original line drawings on a 24 px grid),
+  drawn with QtQuick Shapes in the theme colors. No icon theme or Nerd font is needed in QML.
+  The start menu shows real app icons from the icon theme for desktop entries.
+- **Panels are `Chamfer.qml`**: a Shape path with 45° cuts that follows `style.corners`
+  (sharp/chamfer/round). The active state is diagonal hatching (`Hatch.qml`), as in STYLE.md.
+- **Layers:** bar, dock (exclusive zones) on Top; HUD widgets and the matrix rain on Bottom,
+  under the windows and above the wallpaper; start menu, notifications on Overlay. Hyprland
+  blurs behind the bar, dock, menu and notifications.
+- **Matrix rain moves in steps** (8 per second, every column in the same frame) instead of smooth
+  animation, a few columns kept away from the HUD cluster. It's off with `reduce_motion`, with
+  the lite profile, with `decor.matrix_rain = false`, and **without a GPU with 3D**: under
+  software rendering every step makes the compositor redraw the screen on the CPU, which took
+  Hyprland to 150-170% CPU in the boot-test VM (8% with it off). Per-column surfaces didn't
+  help (each commit still costs a full frame) and doubled the shell's memory.
+- **Software rendering is detected** by `nullgrid-session` from the DRM driver: framebuffer
+  drivers (simpledrm, bochs, qxl...) and QEMU's virtio-gpu without the VIRGL feature bit
+  (`/sys/.../virtioN/features`, bit 0) count as "no GPU". It exports
+  `NULLGRID_SOFTWARE_RENDER=1`; the shell then also uses Qt's software renderer
+  (`QT_QUICK_BACKEND=software`): 106 MB instead of 490 MB RSS and less CPU per redraw. Measured
+  in the VM with Hyprland: 848 MB used and ~5% CPU at idle, vs 1150 MB / 95% before.
+- **Start menu** = a full-screen Overlay surface: a click outside closes it, and it has the
+  keyboard (type to search). Destructive power buttons need a second click within 3 s.
+  `SUPER+SPACE` opens it (new `start_menu` action in the keybind set); fuzzel stays on `SUPER+D`
+  as the keyboard launcher.
+- **Lock screen: hyprlock** with a HUD layout (`~/.config/hypr/hyprlock.conf`, skel) over the
+  current wallpaper: `nullgrid wallpaper apply` keeps `~/.cache/nullgrid/wallpaper/current.png`
+  pointing at it.
+- **Live ISO: the password is `nullgrid`** (`nullgrid-live-password.service` sets it at boot).
+  Before, the password was locked, so the lock screen could never be unlocked. An empty password
+  doesn't work either: PAM then succeeds without asking, and hyprlock never unlocks ("not waiting
+  for input"). The lock screen shows the password on the live ISO only, from
+  `/etc/nullgrid/lock-hint`. Login is still by autologin, and sudo needs no password.
+- **`make test-shell`** runs the shell under a headless Sway in the builder container (Quickshell,
+  Sway, grim and hyprlock are now in the image). It fails on QML errors and warnings, checks the
+  IPC, the start menu and a live theme switch, and saves screenshots. That's seconds instead of a
+  VM boot. The boot test then checks the real session, including unlocking with Enter.
+- **swaybg liveness ignores zombies.** A swaybg that died but wasn't reaped still has the name
+  `swaybg` in /proc, which made `wallpaper apply` think it was running.
+- All NULLGRID packages except fonts and base are 0.5.0.
 
 ## Light hardware strategy (from the target-hardware answer)
 

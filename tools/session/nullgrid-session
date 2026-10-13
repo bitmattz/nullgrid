@@ -25,12 +25,28 @@ fail() { echo "nullgrid-session: $*" >&2; exit 1; }
 [ -z "${WAYLAND_DISPLAY:-}" ] || fail "already inside a Wayland session"
 ls /dev/dri/card* >/dev/null 2>&1 || fail "no display device (/dev/dri/card*)"
 
-# No render node: a display without a GPU driver (simpledrm/efifb). Sway then draws with its
-# pixman renderer; Hyprland goes through Mesa's llvmpipe. (A GPU with a driver but no 3D, like
-# QEMU's virtio-gpu without virgl, has a render node and Mesa falls back to llvmpipe by itself.)
-if ! ls /dev/dri/renderD* >/dev/null 2>&1; then
-    export NULLGRID_SOFTWARE_RENDER=1 WLR_RENDERER=pixman
-fi
+# Is there a GPU with 3D? Without one, Mesa draws in software (llvmpipe), every frame costs real
+# CPU, and the shell drops its continuous animations (NULLGRID_SOFTWARE_RENDER=1).
+software_render() {
+    found=0
+    for card in /sys/class/drm/card[0-9]*; do
+        case ${card##*/} in *-*) continue ;; esac  # connectors, not cards
+        dev=$(readlink -f "$card/device") || continue
+        found=1
+        case $(basename "$(readlink -f "$dev/driver")") in
+            simple-framebuffer|simpledrm|efifb|bochs-drm|bochs|cirrus|cirrus-qemu|qxl|vboxvideo|hyperv_drm) ;;
+            virtio-pci)  # QEMU's virtio-gpu: feature bit 0 is VIRGL (3D)
+                for v in "$dev"/virtio*; do
+                    case $(cat "$v/features" 2>/dev/null) in 1*) return 1 ;; esac
+                done ;;
+            *) return 1 ;;  # a GPU driver: i915, amdgpu, nouveau, nvidia, vmwgfx, ...
+        esac
+    done
+    [ "$found" = 1 ]
+}
+software_render && export NULLGRID_SOFTWARE_RENDER=1
+# No render node at all (simpledrm/efifb): Sway uses its pixman renderer.
+ls /dev/dri/renderD* >/dev/null 2>&1 || export WLR_RENDERER=pixman
 export XDG_SESSION_TYPE=wayland
 # The console login set these to the console variants of the apps; the desktop has the real thing.
 unset STARSHIP_CONFIG YAZI_CONFIG_HOME

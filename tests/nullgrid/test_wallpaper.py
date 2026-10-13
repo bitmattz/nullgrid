@@ -143,6 +143,8 @@ def test_apply_starts_swaybg_once(paths, monkeypatch, tmp_path):
     monkeypatch.setattr(wallpaper, "_alive", lambda pid: pid == 4242)
     wallpaper.apply(paths)
     assert started == [["swaybg", "-o", "Virtual-1", "-i", str(tmp_path / "1280x800.png"), "-m", "fill"]]
+    current = paths.cache_dir / "wallpaper" / "current.png"   # for the lock screen
+    assert current.is_symlink() and current.readlink().name == "1280x800.png"
     wallpaper.apply(paths)  # same picture, swaybg still running: nothing to do
     assert len(started) == 1
 

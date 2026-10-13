@@ -8,6 +8,7 @@ RUN pacman -Syu --noconfirm --needed \
         python python-jinja python-tomlkit python-pytest python-textual python-psutil \
         python-build python-installer python-flit-core lua \
         qemu-base qemu-hw-display-virtio-vga qemu-hw-display-virtio-gpu edk2-ovmf \
+        quickshell sway swaybg grim librsvg hyprlock dbus libnotify ttf-jetbrains-mono \
     && pacman -Scc --noconfirm
 
 # makepkg refuses to run as root, so packages are built as this user.

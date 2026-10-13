@@ -11,6 +11,7 @@ description = "SUPER-based, arrows or hjkl to move around"
 
 [keys]
 terminal = "SUPER+Return"
+start_menu = "SUPER+space"
 launcher = "SUPER+D"
 files = "SUPER+E"
 dashboard = "SUPER+grave"

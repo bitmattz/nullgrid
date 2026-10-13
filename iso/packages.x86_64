@@ -88,10 +88,10 @@ sway
 swaybg
 # rsvg-convert: renders the generated SVG wallpaper to PNG
 librsvg
+# desktop shell toolkit: bar, dock, HUD widgets, start menu, notifications (QML)
+quickshell
 # keyboard app launcher
 fuzzel
-# notification daemon (D-Bus activated)
-mako
 # lock screen
 hyprlock
 # screenshots (nullgrid-screenshot): capture
@@ -102,5 +102,7 @@ slurp
 wl-clipboard
 # notify-send, for scripts that report to the notification daemon
 libnotify
+# screen brightness (keys and the bar), works without root through logind
+brightnessctl
 # OpenGL drivers, incl. llvmpipe for software rendering in VMs without 3D acceleration
 mesa

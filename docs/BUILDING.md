@@ -20,6 +20,7 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (smoother desktop; without it Mesa renders in software) |
 | `make test` | unit + snapshot tests of `nullgrid` and `nullgrid-dash`, in the builder container |
+| `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu and a live theme switch, and saves screenshots to `out/screens/shell-*.png` |
 | `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, that `nullgrid` can switch themes and passes `doctor`, and that the terminal apps load their generated configs. Then it checks the desktop on tty1:
 Hyprland (config valid, wallpaper up, a live theme switch, the keybind popup and launcher), Sway
 via the lite profile, and TTY mode (the dashboard). Screenshots of each go to `out/screens/` |

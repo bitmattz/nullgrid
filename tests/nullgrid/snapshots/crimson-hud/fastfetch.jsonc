@@ -22,7 +22,8 @@
     { "type": "packages", "key": "PACKAGES" },
     { "type": "shell", "key": "SHELL" },
     { "type": "terminal", "key": "TERMINAL" },
-    { "type": "cpu", "key": "CPU" },
+    // no clock speed: the line then fits the login terminal
+    { "type": "cpu", "key": "CPU", "format": "{name} ({cores-logical})" },
     { "type": "gpu", "key": "GPU" },
     { "type": "memory", "key": "MEMORY" },
     { "type": "disk", "key": "DISK", "folders": "/" },

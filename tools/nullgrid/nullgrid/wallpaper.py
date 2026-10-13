@@ -31,7 +31,7 @@ from xml.sax.saxutils import escape
 from . import logo
 from .paths import Paths
 
-GENERATOR_VERSION = 2  # bump when the drawing changes, so cached renders are redone
+GENERATOR_VERSION = 3  # bump when the drawing changes, so cached renders are redone
 
 GLYPHS = "0123456789ABCDEF:./<>|=+*#"
 
@@ -40,10 +40,14 @@ def _f(v: float) -> str:
     return f"{v:.1f}".rstrip("0").rstrip(".")
 
 
+DOCK_PX = 72  # the dock's width in pixels (shell/Dock.qml): text on the left starts after it
+
+
 class Canvas:
     def __init__(self, width: int, height: int):
         self.w, self.h = width, height
         self.u = min(width / 1920, height / 1080)  # 1 unit = 1 px at 1920x1080
+        self.left = max(52 * self.u, DOCK_PX + 20)  # x of the text blocks on the left
         self.parts: list[str] = []
 
     def add(self, s: str) -> None:
@@ -128,8 +132,8 @@ def _text_zones(cv: Canvas, data_text: bool, keymap: bool) -> list[tuple[float, 
     plate_x = cv.w - 548 * u
     zones = [(plate_x - 20 * u, 20 * u, cv.w - 30 * u, 210 * u)]           # logo plate
     if data_text:
-        zones += [(30 * u, 30 * u, 330 * u, 420 * u),                        # barcode + manifest
-                  (100 * u, cv.h - 185 * u, 420 * u, cv.h - 80 * u)]         # hex dump
+        zones += [(cv.left - 20 * u, 30 * u, cv.left + 280 * u, 420 * u),     # barcode + manifest
+                  (cv.left, cv.h - 185 * u, cv.left + 330 * u, cv.h - 80 * u)]  # hex dump
         if keymap:
             zones.append((plate_x - 20 * u, 210 * u, plate_x + 380 * u, 460 * u))
     return zones
@@ -251,7 +255,7 @@ def _logo_plate(cv: Canvas, spec: dict, c: dict, display: str, mono: str, glow: 
 
 def _barcode(cv: Canvas, c: dict, rng: random.Random, font: str) -> None:
     u = cv.u
-    x0, y0, h = 52 * u, 48 * u, 36 * u
+    x0, y0, h = cv.left, 48 * u, 36 * u
     x, bars = x0, []
     while x < x0 + 230 * u:
         bw = rng.choice((1, 1, 2, 3)) * 1.6 * u
@@ -283,7 +287,7 @@ def _rows(cv: Canvas, x: float, y: float, title: str, rows: list[tuple[str, str]
 
 def _manifest(cv: Canvas, spec: dict, c: dict, font: str) -> None:
     u = cv.u
-    x = 52 * u
+    x = cv.left
     rows = [("KERNEL", "LINUX"), ("SESSION", "WAYLAND"), ("SHELL", "ZSH"),
             ("THEME", spec["theme"].upper()), ("LATTICE", "4x4 / HOLE 2.2"), ("UPLINK", "STABLE")]
     y = _rows(cv, x, 190 * u, "// SYS.MANIFEST", [(k.ljust(10, "."), v) for k, v in rows], c, font,
@@ -308,7 +312,7 @@ def _hexdump(cv: Canvas, c: dict, font: str) -> None:
         lines.append(f"0x7F3A{i * 8:02X}  " + " ".join(f"{ord(ch):02X}" for ch in data) + f"  {data}")
     y = cv.h - 160 * u
     for i, line in enumerate(lines):
-        cv.text(120 * u, y + i * 16 * u, line, size=11 * u, fill=c["primary"] if i == 0 else c["dim"],
+        cv.text(cv.left + 30 * u, y + i * 16 * u, line, size=11 * u, fill=c["primary"] if i == 0 else c["dim"],
                 font=font, opacity=0.75)
 
 
@@ -316,7 +320,7 @@ def _keymap(cv: Canvas, keymap: list, c: dict, font: str, plate: tuple) -> None:
     """The main keybinds under the logo plate, so a new user sees where to start."""
     u = cv.u
     x, y, w, h = plate
-    rows = [(k, v.upper()) for k, v in keymap[:10]]
+    rows = [(k, v.upper()) for k, v in keymap[:12]]
     _rows(cv, x, y + h + 56 * u, "// KEYMAP", rows, c, font, key_width=190 * u, key_color=c["text"])
 
 
@@ -398,7 +402,10 @@ def cached_png(paths: Paths, spec: dict, width: int, height: int) -> Path:
 
 
 def prune(paths: Paths, keep: int = 12) -> None:
-    files = sorted((paths.cache_dir / "wallpaper").glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)
+    current = paths.cache_dir / "wallpaper" / "current.png"
+    keep_too = current.resolve() if current.is_symlink() else None
+    files = sorted((p for p in (paths.cache_dir / "wallpaper").glob("*.png")
+                    if not p.is_symlink() and p != keep_too), key=lambda p: p.stat().st_mtime, reverse=True)
     for old in files[keep:]:
         old.unlink(missing_ok=True)
 
@@ -411,10 +418,13 @@ def _state_file(paths: Paths) -> Path:
 
 
 def _alive(pid: int) -> bool:
+    """A running swaybg (not a zombie that nobody reaped yet)."""
     try:
-        return Path(f"/proc/{pid}/comm").read_text().strip() == "swaybg"
+        stat = Path(f"/proc/{pid}/stat").read_text()
     except OSError:
         return False
+    name, _, rest = stat.partition(" (")[2].rpartition(") ")
+    return name == "swaybg" and not rest.startswith(("Z", "X"))
 
 
 def apply(paths: Paths) -> list[tuple[Output, Path]]:
@@ -434,6 +444,7 @@ def apply(paths: Paths) -> list[tuple[Output, Path]]:
         old = json.loads(state_file.read_text())
     except (OSError, ValueError):
         old = {}
+    _link_current(paths, shown[0][1])
     if old.get("argv") == argv and _alive(old.get("pid", 0)):
         return shown
     proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -445,3 +456,13 @@ def apply(paths: Paths) -> list[tuple[Output, Path]]:
         os.kill(old["pid"], signal.SIGTERM)
     prune(paths)
     return shown
+
+
+def _link_current(paths: Paths, png: Path) -> None:
+    """~/.cache/nullgrid/wallpaper/current.png -> the first screen's wallpaper (the lock screen uses it)."""
+    link = paths.cache_dir / "wallpaper" / "current.png"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    tmp = link.with_name(".current.png.tmp")
+    tmp.unlink(missing_ok=True)
+    tmp.symlink_to(png.name)
+    os.replace(tmp, link)

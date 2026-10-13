@@ -56,7 +56,6 @@ HYPRLAND_CHECKS = [
     ("hyprctl configerrors -j | tr -d ' \\t\\n'", r'\[(""|)\]'),
     ("hyprctl monitors | grep -o '1600x900'", r"1600x900"),
     ("pgrep -x swaybg >/dev/null && ls ~/.cache/nullgrid/wallpaper/ | grep -c 1600x900", r"[1-9]"),
-    ("hyprctl clients | grep -c 'class: nullgrid-welcome'", r"1"),  # the login terminal
     ("hyprctl binds | grep -c 'dispatcher'", r"[1-9]\d+"),
 ]
 # Run when a check fails, to make the report actionable.
@@ -205,15 +204,31 @@ def desktop_tour(c: Checker, mon: Monitor) -> None:
         return
     c.wait("pgrep -x swaybg >/dev/null && echo UP", "UP", 60)
     c.con.run(ENV, 30)
-    c.info("ls /dev/dri; echo SOFTWARE_RENDER=$(tr '\\0' '\\n' < /proc/$(pgrep -x Hyprland)/environ | grep -c NULLGRID_SOFTWARE_RENDER=1)")
+    c.wait("nullgrid-shell status 2>/dev/null", r"theme=\S+ wm=HYPRLAND .*", 60)
+    # the test VM's virtio-gpu has no 3D: the session must notice (the shell then skips animations)
+    c.check("tr '\\0' '\\n' < /proc/$(pgrep -x Hyprland)/environ | grep -x NULLGRID_SOFTWARE_RENDER=1",
+            r"NULLGRID_SOFTWARE_RENDER=1")
     for command, expect in HYPRLAND_CHECKS:
         c.check(command, expect)
+    # the login terminal (kitty takes a few seconds to map under software rendering)
+    c.wait("hyprctl clients | grep -c 'class: nullgrid-welcome'", "1", 30)
     time.sleep(4)  # kitty draws fastfetch
     mon.screenshot("desktop-hyprland")
     c.info("free -m | awk '/Mem/ {print \"used MB:\", $3}'")
     c.check("nullgrid theme set toxic-grid | grep -o 'reloaded: .*'", r"reloaded: .*hyprland.*wallpaper.*")
+    c.wait("nullgrid-shell status", r"theme=toxic-grid .*", 20)     # the shell restyled itself
     time.sleep(5)
     mon.screenshot("desktop-hyprland-toxic-grid")
+    c.con.run("notify-send -a nullgrid 'Uplink established' 'Node 2.2 is online.';"
+              " notify-send -a battery -u critical 'Battery critical' '5% left, plug in the charger.'", 30)
+    time.sleep(3)
+    mon.screenshot("desktop-hyprland-notifications")
+    mon.keys("meta_l-spc")         # start menu
+    if c.wait("nullgrid-shell status", r".* menu=true .*", 20):
+        time.sleep(2)
+        mon.screenshot("desktop-hyprland-menu")
+    mon.keys("esc")
+    c.wait("nullgrid-shell status", r".* menu=false .*", 20)
     mon.keys("meta_l-slash")       # keybind help popup
     time.sleep(4)
     mon.screenshot("desktop-hyprland-keys")
@@ -222,6 +237,14 @@ def desktop_tour(c: Checker, mon: Monitor) -> None:
     time.sleep(3)
     mon.screenshot("desktop-hyprland-launcher")
     mon.keys("esc")
+    time.sleep(1)
+    # lock screen: the live user's password is "nullgrid"
+    c.con.run("setsid -f hyprlock </dev/null >/dev/null 2>&1", 30)  # detached: not a job of this tty
+    if c.wait("pgrep -x hyprlock >/dev/null && echo LOCKED", "LOCKED", 20):
+        time.sleep(4)
+        mon.screenshot("desktop-lock")
+        mon.keys("n", "u", "l", "l", "g", "r", "i", "d", "ret")
+        c.wait("pgrep -x hyprlock >/dev/null || echo UNLOCKED", "UNLOCKED", 20)
     mon.keys("meta_l-shift-e")     # the "leave the desktop" keybind
     if not c.wait("pgrep -x Hyprland >/dev/null || echo GONE", "GONE", 20):
         c.info("pgrep -a Hyprland; pgrep -a start-hyprland; tail -5 ~/.local/state/nullgrid/session-hyprland.log")
@@ -235,6 +258,7 @@ def desktop_tour(c: Checker, mon: Monitor) -> None:
         c.con.run(ENV, 30)
         c.check("swaymsg -t get_version | grep -o '\"human_readable\": \"[0-9.]*'", r'"human_readable": "1\.\d+.*')
         c.check("swaymsg -t get_tree | grep -c '\"app_id\": \"nullgrid-welcome\"'", r"1")
+        c.wait("nullgrid-shell status 2>/dev/null", r"theme=\S+ wm=SWAY .*", 60)
         time.sleep(4)
         mon.screenshot("desktop-sway")
         c.info("free -m | awk '/Mem/ {print \"used MB:\", $3}'")

@@ -4,26 +4,26 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 4 (compositor + window styling)**. The ISO boots into a Hyprland desktop with
-> neon window borders and a generated HUD wallpaper (Sway as fallback and lite session), or into
-> a themed TTY dashboard in TTY mode. zsh + starship, kitty, neovim, yazi, btop, lazygit, tmux
-> and fastfetch are all styled from one TOML file by the `nullgrid` tool. The dock, bar, widgets
-> and sounds come in later phases (see `CLAUDE.md` section 9).
+> Status: **phase 5 (shell UI)**. The ISO boots into a Hyprland desktop (Sway as fallback and
+> lite session) with the NULLGRID shell: status bar, dock, HUD widgets, start menu, notifications
+> and a HUD lock screen, over a generated wallpaper. TTY mode gives a themed dashboard instead.
+> Everything, down to zsh, kitty and neovim, is styled from one TOML file by the `nullgrid` tool.
+> Sounds, GTK/Qt theming and the installer come in later phases (see `CLAUDE.md` section 9).
 
 ## Screenshots
 
-Taken by `make test-boot` on the live ISO in QEMU (1600x900, software rendering).
+Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software rendering).
 
 | | |
 |---|---|
-| ![Hyprland desktop, crimson-hud](docs/screenshots/desktop-hyprland.png) | ![The same desktop after `nullgrid theme set toxic-grid`](docs/screenshots/desktop-hyprland-toxic-grid.png) |
-| **Desktop** (crimson-hud): Hyprland, kitty with fastfetch, the HUD wallpaper | **Live theme switch**: `nullgrid theme set toxic-grid` restyles borders, terminal and wallpaper without logging out |
-| ![Keybind popup](docs/screenshots/desktop-hyprland-keys.png) | ![App launcher](docs/screenshots/desktop-hyprland-launcher.png) |
-| **`SUPER+/`**: the keybinds, from the same file Hyprland and Sway use | **`SUPER+D`**: the app launcher (fuzzel) |
-| ![Sway session](docs/screenshots/desktop-sway.png) | ![TTY dashboard](docs/screenshots/tty1-dashboard.png) |
-| **Sway**: the fallback and `lite` session | **TTY mode**: the dashboard on the Linux console |
-| ![Wallpaper, crimson-hud](docs/screenshots/wallpaper-crimson-hud.png) | ![Wallpaper, ice-protocol](docs/screenshots/wallpaper-ice-protocol.png) |
-| **The wallpaper** alone: circuit traces, logo plate, keymap, data blocks, all generated | ...and in ice-protocol |
+| ![Desktop, crimson-hud](docs/screenshots/desktop-hyprland.png) | ![Start menu](docs/screenshots/desktop-hyprland-menu.png) |
+| **Desktop** (crimson-hud): status bar, dock, HUD widgets, the login terminal, the generated wallpaper | **Start menu** (`SUPER+SPACE`): search, categories, favorites, power |
+| ![Live theme switch with notifications](docs/screenshots/desktop-hyprland-notifications.png) | ![Lock screen](docs/screenshots/desktop-lock.png) |
+| **`nullgrid theme set toxic-grid`** restyles everything live; notifications (critical in red) | **Lock screen** (`SUPER+CTRL+L`) |
+| ![Keybind popup](docs/screenshots/desktop-hyprland-keys.png) | ![Sway session](docs/screenshots/desktop-sway.png) |
+| **`SUPER+/`**: the keybinds, from the same file Hyprland and Sway use | **Sway**: the fallback and `lite` session, same shell |
+| ![TTY dashboard](docs/screenshots/tty1-dashboard.png) | ![Wallpaper, ice-protocol](docs/screenshots/wallpaper-ice-protocol.png) |
+| **TTY mode**: the dashboard on the Linux console | **The wallpaper** alone (ice-protocol): circuit traces, logo plate, keymap, data blocks, all generated |
 
 ## Quick start
 
@@ -31,6 +31,7 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, software rendering)
 make iso         # build out/nullgrid-*.iso inside Docker (any Linux host)
 make run         # boot it in QEMU (UEFI); needs qemu + OVMF on the host
 make test        # unit + snapshot tests of the nullgrid tool (Docker)
+make test-shell  # the desktop shell in a headless Sway: QML errors, IPC, screenshots (Docker)
 make test-boot   # headless boot test; needs only Docker
 ```
 
