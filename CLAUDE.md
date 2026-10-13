@@ -204,3 +204,42 @@ nullgrid/
 - Hyprland vs. Sway, and Quickshell vs. AGS vs. eww (give me a recommendation).
 - Target hardware (I'd like it to work on laptops with NVIDIA hybrid graphics too).
 - Whether to also publish it as an installable dotfiles/theme package for existing Arch systems (not only an ISO).
+
+---
+
+## 13. Progress log (read this first when resuming)
+
+### Status as of 2026-10-12: Phase 1 DONE, next is Phase 2
+
+**Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
+(Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
+engine and sfx daemon; Python/Textual for the TTY dashboard; auto-login on the live ISO; no
+separate dotfiles/theme package for other Arch systems; build runs in Docker; repo is
+github.com/bitmattz/nullgrid (push over SSH, remote `git@github.com:bitmattz/nullgrid.git`).
+Targets include light hardware: old ThinkPads, DIY cyberdecks, and Raspberry Pi (aarch64, as a
+separate SD-image builder after phase 9, see `docs/DECISIONS.md`). Full rationale is in `docs/DECISIONS.md`.
+
+**Phase 1 delivered (commit `2a0ce67`):**
+- `iso/`: archiso profile (from releng, trimmed): NetworkManager, zstd, live user `nullgrid`
+  (sysusers.d, autologin on tty1 + ttyS0, passwordless sudo), local `[nullgrid]` repo at `out/repo`.
+- `pkg/nullgrid-base`: os-release branding. All NULLGRID code ships as PKGBUILDs in `pkg/`.
+- `build/`: Dockerfile (`nullgrid-builder`: archiso + QEMU + OVMF), `build-packages.sh`,
+  `build-iso.sh` (fails on mkinitcpio `==> ERROR`), `run-vm.sh`.
+- `tests/boot_smoke.py` + `make test-boot` / `test-boot-bios`: headless boot over serial. Both PASS
+  (boots to shell in ~20 s with KVM).
+- Docs: README, BUILDING, DECISIONS, STYLE, LOGO (3 concepts), `assets/LICENSES.md`.
+
+**Gotchas learned:**
+- `iso/packages.x86_64`: NO inline comments (mkarchiso keeps trailing spaces). Put the comment on the line above.
+- systemd 262: `systemd-loop@.service` is masked in airootfs, otherwise the live system is "degraded".
+- The host is Zorin OS (not Arch). It has Docker but no QEMU/OVMF yet (`make run` needs
+  `sudo apt install qemu-system-x86 ovmf`). Disk is tight (~25 GB free).
+
+**Open items waiting on me:**
+- Pick a logo concept in `docs/LOGO.md` (A "Null cell" is recommended) before phase 4 draws it.
+
+**Next step, Phase 2 (theme engine + `nullgrid` CLI):** `tools/nullgrid/` Python package; the
+`nullgrid.toml` schema with validation (incl. a `[performance] profile = full|lite`); Jinja templates in
+`config/templates/`; render + hot-reload; `theme list|set|edit|reload`, `widget toggle`, `mode`,
+`doctor`; presets `themes/crimson-hud|ice-protocol|toxic-grid.toml`; pytest snapshot tests;
+package it as `pkg/nullgrid-core`; add it to the ISO; extend `make test-boot`.
