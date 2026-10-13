@@ -1,0 +1,62 @@
+# Generated files: one table per target. Field reference: tools/nullgrid/nullgrid/render.py
+# Override or extend in ~/.config/nullgrid/templates/manifest.toml (same format;
+# `enabled = false` turns a target off). Placeholders: {config_home} {config_dir} {home}.
+#
+# Apps that can't hot-reload a file pick it up when they next start; their configs
+# (written in later phases) include these fragments rather than being generated whole.
+
+[kitty]
+template = "kitty.conf.j2"
+target = "{config_home}/kitty/nullgrid-theme.conf"
+process = "kitty"
+signal = "USR1"                       # kitty re-reads its config on SIGUSR1
+
+[hyprland]
+template = "hyprland.conf.j2"
+target = "{config_home}/hypr/nullgrid-theme.conf"
+reload = ["hyprctl", "reload"]
+env = "HYPRLAND_INSTANCE_SIGNATURE"
+
+[hyprlock]
+template = "hyprlock.conf.j2"
+target = "{config_home}/hypr/nullgrid-hyprlock.conf"
+
+[quickshell]
+# Quickshell watches this file and restyles the shell UI on change.
+template = "theme.json.j2"
+target = "{config_dir}/generated/theme.json"
+
+[mako]
+template = "mako.conf.j2"
+target = "{config_home}/mako/config"
+process = "mako"
+reload = ["makoctl", "reload"]
+
+[fuzzel]
+template = "fuzzel.ini.j2"
+target = "{config_home}/fuzzel/fuzzel.ini"
+
+[btop]
+template = "btop.theme.j2"
+target = "{config_home}/btop/themes/nullgrid.theme"
+
+[nvim]
+template = "nvim-palette.lua.j2"
+target = "{config_home}/nvim/lua/nullgrid/palette.lua"
+
+[gtk]
+template = "gtk-colors.css.j2"
+target = "{config_dir}/generated/gtk-colors.css"
+
+[qt]
+template = "qt6ct-colors.conf.j2"
+target = "{config_home}/qt6ct/colors/nullgrid.conf"
+
+[tty]
+# Linux console palette. Sourced at TTY login; applied immediately when
+# `nullgrid theme ...` runs on a console.
+template = "tty-palette.sh.j2"
+target = "{config_dir}/generated/tty-palette.sh"
+reload = ["sh", "{target}"]
+env = "TERM=linux"
+terminal = true

@@ -4,7 +4,9 @@
 FROM archlinux:latest
 
 RUN pacman -Syu --noconfirm --needed \
-        archiso base-devel git sudo pacman-contrib python python-jinja \
+        archiso base-devel git sudo pacman-contrib \
+        python python-jinja python-tomlkit python-pytest \
+        python-build python-installer python-flit-core \
         qemu-base edk2-ovmf \
     && pacman -Scc --noconfirm
 

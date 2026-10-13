@@ -38,3 +38,5 @@ networkmanager
 ## NULLGRID (built from pkg/ into the local [nullgrid] repo)
 # branding: os-release, release info
 nullgrid-base
+# theme engine + `nullgrid` CLI (pulls in python, python-jinja, python-tomlkit)
+nullgrid-core

@@ -1,0 +1,106 @@
+{
+  "behavior": {
+    "animation_speed": 1.0,
+    "default_mode": "desktop",
+    "keybinds": "default",
+    "reduce_motion": false
+  },
+  "colors": {
+    "bg": "#050605",
+    "bg_alt": "#0c110a",
+    "dim": "#6f7d66",
+    "glow": "#9dff00",
+    "primary": "#b6ff3b",
+    "secondary": "#f4e409",
+    "surface": "#10160d",
+    "terminal": {
+      "background": "#050605",
+      "color0": "#151b12",
+      "color1": "#ff4f3a",
+      "color10": "#d4ff85",
+      "color11": "#fff166",
+      "color12": "#7dd6ff",
+      "color13": "#e3a3ff",
+      "color14": "#8fffe0",
+      "color15": "#f6fbf0",
+      "color2": "#b6ff3b",
+      "color3": "#f4e409",
+      "color4": "#3ac1ff",
+      "color5": "#d46bff",
+      "color6": "#3dffc5",
+      "color7": "#b9c7ae",
+      "color8": "#3c4a34",
+      "color9": "#ff7f6e",
+      "cursor": "#b6ff3b",
+      "foreground": "#eaf5e0",
+      "selection": "#24331a"
+    },
+    "text": "#eaf5e0",
+    "warning": "#ff9f1c"
+  },
+  "decor": {
+    "circuit_lines": true,
+    "data_text": true,
+    "matrix_rain": true,
+    "scanlines": false
+  },
+  "durations": {
+    "fast": 120,
+    "normal": 180,
+    "slow": 220
+  },
+  "effects": {
+    "animations": true,
+    "blur": true,
+    "lite": false,
+    "shadows": true
+  },
+  "fonts": {
+    "display": "Orbitron",
+    "mono": "JetBrains Mono",
+    "mono_size": 11,
+    "size": 11,
+    "ui": "Rajdhani"
+  },
+  "name": "toxic-grid",
+  "refresh_ms": 1000,
+  "style": {
+    "blur": true,
+    "border_width": 2,
+    "corners": "chamfer",
+    "gaps": 8,
+    "glow": 0.8,
+    "surface_opacity": 0.85,
+    "terminal_opacity": 0.95
+  },
+  "widgets": {
+    "activity_grid": {
+      "position": "bottom-right",
+      "visible": true
+    },
+    "bar": {
+      "position": "bottom",
+      "visible": true
+    },
+    "cpu_bars": {
+      "position": "bottom-right",
+      "visible": true
+    },
+    "dock": {
+      "position": "left",
+      "visible": true
+    },
+    "net_graph": {
+      "position": "bottom-right",
+      "visible": true
+    },
+    "ram_gauge": {
+      "position": "bottom-right",
+      "visible": true
+    },
+    "workspace_strip": {
+      "position": "bottom-right",
+      "visible": true
+    }
+  }
+}

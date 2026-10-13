@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-12: Phase 1 DONE, next is Phase 2
+### Status as of 2026-10-13: Phase 2 DONE, next is Phase 3
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -238,8 +238,27 @@ separate SD-image builder after phase 9, see `docs/DECISIONS.md`). Full rational
 **Open items waiting on me:**
 - Pick a logo concept in `docs/LOGO.md` (A "Null cell" is recommended) before phase 4 draws it.
 
-**Next step, Phase 2 (theme engine + `nullgrid` CLI):** `tools/nullgrid/` Python package; the
-`nullgrid.toml` schema with validation (incl. a `[performance] profile = full|lite`); Jinja templates in
-`config/templates/`; render + hot-reload; `theme list|set|edit|reload`, `widget toggle`, `mode`,
-`doctor`; presets `themes/crimson-hud|ice-protocol|toxic-grid.toml`; pytest snapshot tests;
-package it as `pkg/nullgrid-core`; add it to the ISO; extend `make test-boot`.
+**Phase 2 delivered:**
+- `tools/nullgrid/`: Python package (deps: jinja2, tomlkit). `schema.py` (own validator, dotted
+  error paths, "did you mean"), `config.py` (schema for nullgrid.toml + presets, load/merge,
+  comment-preserving edits), `render.py` (manifest, Jinja env, all-or-nothing render, hash-tracked
+  writes with `.bak` on hand edits, reload hooks), `doctor.py`, `cli.py`.
+- CLI: `theme list|set [--reset-colors]|edit|reload [--dry-run]`, `widget list|toggle`, `mode`, `doctor`.
+- `themes/{crimson-hud,ice-protocol,toxic-grid}.toml`; default config `config/nullgrid.toml`.
+- `config/templates/` + `manifest.toml`: kitty, hyprland, hyprlock, quickshell `theme.json`, mako,
+  fuzzel, btop, nvim palette, gtk colors, qt6ct colors, tty palette script.
+- `pkg/nullgrid-core` (runs pytest in `check()`), installed on the ISO. `make test` (51 tests incl.
+  snapshots in `tests/nullgrid/snapshots/`). `make test-boot` checks `nullgrid` on the live ISO.
+- Docs: `docs/CUSTOMIZING.md`; phase-2 section in `docs/DECISIONS.md`.
+
+**Gotchas learned (phase 2):**
+- Arch ships flit_core 4.x: don't pin `<4` in `pyproject.toml`.
+- Snapshots: after an intended template change run `make test NULLGRID_UPDATE_SNAPSHOTS=1`, review the diff.
+- Tests stub `render._processes` so they never signal the developer's real kitty/mako.
+
+**Next step, Phase 3 (terminal experience):** kitty.conf (includes `nullgrid-theme.conf`), zsh +
+plugins, starship (add a starship template: it has no include, so generate the palette into
+starship.toml), fastfetch logo, themed btop/yazi/nvim colorscheme (uses `nullgrid.palette`)/lazygit/cava;
+fonts packaged (Rajdhani, Orbitron, JetBrains Mono; OFL, record in `assets/LICENSES.md`); TTY mode:
+login honors `behavior.default_mode`, source `generated/tty-palette.sh` on the console, Textual
+dashboard, tmux/zellij theme; run `nullgrid theme reload` on first login of the live user.

@@ -1,0 +1,77 @@
+# NULLGRID configuration: ~/.config/nullgrid/nullgrid.toml
+#
+# After editing, apply with:   nullgrid theme reload
+# Or edit + validate + apply:  nullgrid theme edit
+# Check for problems:          nullgrid doctor
+# Every key is optional; what's shown here are the defaults. See docs/CUSTOMIZING.md.
+
+[theme]
+# One of: nullgrid theme list
+preset = "crimson-hud"
+
+# Override any value of the preset. Overrides survive `nullgrid theme set`
+# (unless you pass --reset-colors), so keep them few.
+[theme.colors]
+# primary = "#5ef2f2"
+# [theme.colors.terminal]
+# color1 = "#ff3b4e"
+
+[theme.fonts]
+# ui = "Rajdhani"        # condensed UI font
+# mono = "JetBrains Mono"
+# display = "Orbitron"   # logo plate and big numbers
+# size = 11
+# mono_size = 11
+
+[theme.style]
+# border_width = 2       # 0-8 px
+# glow = 0.6             # 0-1
+# corners = "chamfer"    # sharp | chamfer | round
+# surface_opacity = 0.85
+# terminal_opacity = 0.92
+# blur = true
+# gaps = 8
+
+[sound]
+enabled = true
+volume = 0.6             # master, 0-1
+pack = "neural-link"     # neural-link | minimal-ops
+
+[sound.quiet_hours]
+enabled = false
+start = "22:00"
+end = "07:00"
+volume = 0.3             # multiplier during quiet hours
+
+# Per-event switches and volume. Off by default: window_focus, menu_hover,
+# terminal_bell, command_done, command_failed.
+[sound.events]
+# window_open = { enabled = true, volume = 0.5 }
+# command_failed = { enabled = true }
+
+# Positions: top bottom left right top-left top-right bottom-left bottom-right
+[widgets]
+dock = { visible = true, position = "left" }
+bar = { visible = true, position = "bottom" }
+ram_gauge = { visible = true, position = "bottom-right" }
+net_graph = { visible = true, position = "bottom-right" }
+cpu_bars = { visible = true, position = "bottom-right" }
+workspace_strip = { visible = true, position = "bottom-right" }
+activity_grid = { visible = true, position = "bottom-right" }
+
+[decor]
+circuit_lines = true
+matrix_rain = true
+data_text = true
+scanlines = false
+
+[behavior]
+animation_speed = 1.0    # multiplier: 2.0 = twice as fast
+reduce_motion = false    # no animations, no glitch effects
+default_mode = "desktop" # desktop | tty  (or: nullgrid mode tty)
+keybinds = "default"
+
+[performance]
+# full: everything on. lite: no blur, shadows or animations, slower widget
+# refresh. Use lite on old laptops, Raspberry Pi and other light hardware.
+profile = "full"

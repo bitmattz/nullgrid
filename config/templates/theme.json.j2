@@ -1,0 +1,12 @@
+{{ {
+  "name": theme.meta.name,
+  "colors": c,
+  "fonts": fonts,
+  "style": style,
+  "widgets": widgets,
+  "decor": decor,
+  "behavior": behavior,
+  "effects": effects,
+  "durations": {"fast": ms(120), "normal": ms(180), "slow": ms(220)},
+  "refresh_ms": 3000 if effects.lite else 1000,
+} | json }}

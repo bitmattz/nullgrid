@@ -23,6 +23,10 @@ CHECKS = [
     ("id -nG", r".*\bwheel\b.*"),
     ("sudo -n true && echo SUDO_OK", r"SUDO_OK"),
     ("systemctl is-active NetworkManager", r"active"),
+    ("nullgrid --version", r"nullgrid \d+\.\d+\.\d+"),
+    ("nullgrid theme set ice-protocol >/dev/null && grep -o '\"name\": \"[a-z-]*\"' ~/.config/nullgrid/generated/theme.json",
+     r'"name": "ice-protocol"'),
+    ("nullgrid doctor >/dev/null && echo DOCTOR_OK", r"DOCTOR_OK"),
 ]
 # Run when a check fails, to make the report actionable.
 DIAGNOSTICS = "systemctl --failed --no-legend --plain --full; journalctl -b -p warning --no-pager -o cat | tail -n 30"

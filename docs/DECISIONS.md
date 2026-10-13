@@ -39,6 +39,45 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   `filesystem`); `/etc/os-release` takes precedence and is otherwise unowned on Arch.
 - **Makefile rather than justfile.** `make` is preinstalled everywhere and `just` isn't.
 
+## Phase 2
+
+- **Validation is a ~150-line schema module, not pydantic.** pydantic-core is a compiled
+  dependency that matters on a Pi; the schema here does what's needed (types, ranges, enums,
+  defaults, dotted error paths, "did you mean" for typos) with Jinja + tomlkit as the only deps.
+- **Unknown config keys are errors.** A misspelled key that silently does nothing is worse than
+  a refusal; the error names the key and suggests the right one.
+- **Presets + overrides.** `[theme] preset` picks a theme file; `[theme.colors|fonts|style]` in
+  the user config override single values on top of it. `theme set` keeps overrides (it warns
+  and offers `--reset-colors`) rather than deleting what the user wrote.
+- **Fragments over whole files.** Where an app can include a file (kitty, Hyprland, hyprlock,
+  GTK, nvim), nullgrid generates only the theme fragment and the app's main config includes it.
+  Whole files are generated only where the app has no include (mako, fuzzel, btop theme, qt6ct).
+- **Generated files are tracked by hash** in `~/.local/state/nullgrid/generated.json`. Unchanged
+  output isn't rewritten (no needless reloads); a file edited by hand or not written by nullgrid
+  is copied to `.bak` before it's replaced.
+- **All-or-nothing rendering.** Every template renders into memory before anything is written,
+  and the config is validated before the CLI saves it, so a mistake can't leave half the apps
+  restyled.
+- **Reload hooks are declarative** (`process`/`signal`/`reload`/`env` in the manifest) and only
+  fire for running apps whose file changed. kitty gets SIGUSR1 sent directly (no `pkill`).
+  Apps that can't hot-reload (btop, fuzzel, qt6ct apps, nvim) pick changes up on next start.
+- **Hyprland can't cut window corners**, so `corners = "chamfer"` gives square windows; the
+  chamfers are drawn on panels and frames (Quickshell). `round` maps to `rounding = 10`.
+- **`[performance] profile = "lite"`** turns off blur, shadows and animations in every generated
+  file and tells the shell to refresh widgets every 3 s instead of 1 s. `reduce_motion` only
+  turns off motion. Choosing Sway for `lite` is left for phase 4.
+- **All three presets use the same fonts for now** (Rajdhani / JetBrains Mono / Orbitron). Per-theme
+  fonts are a one-line change once the fonts are packaged (phases 3 and 7).
+- **The `nullgrid sound` subcommands are left for phase 6**, together with the daemon; the
+  `[sound]` schema exists now so the config file format doesn't change later.
+- **`nullgrid mode` only records the choice for now.** Phase 3 makes login honor it.
+- **Tests:** `make test` runs pytest in the builder container; `makepkg` runs the same suite in
+  `check()`, so a broken `nullgrid-core` can't reach the ISO. Snapshot files under
+  `tests/nullgrid/snapshots/` hold every template rendered for every preset; refresh them after an
+  intended change with `make test NULLGRID_UPDATE_SNAPSHOTS=1` and review the diff.
+- **Repo code reaches PKGBUILDs as a tarball.** `build-packages.sh` puts `nullgrid-src.tar`
+  (tools, themes, config, tests) next to each PKGBUILD, which lists it in `source=()`.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

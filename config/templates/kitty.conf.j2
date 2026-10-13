@@ -1,0 +1,29 @@
+{{ header("#") }}
+# Included from kitty.conf.
+
+font_family        {{ fonts.mono }}
+font_size          {{ fonts.mono_size }}
+background_opacity {{ style.terminal_opacity }}
+
+foreground           {{ t.foreground }}
+background           {{ t.background }}
+cursor               {{ t.cursor }}
+cursor_text_color    {{ t.background }}
+selection_foreground {{ t.foreground }}
+selection_background {{ t.selection }}
+url_color            {{ c.primary }}
+
+window_border_width   {{ style.border_width }}px
+active_border_color   {{ c.glow }}
+inactive_border_color {{ c.dim.mix(c.bg, 0.5) }}
+bell_border_color     {{ c.warning }}
+
+active_tab_foreground   {{ c.bg }}
+active_tab_background   {{ c.primary }}
+inactive_tab_foreground {{ c.dim }}
+inactive_tab_background {{ c.surface }}
+tab_bar_background      {{ c.bg }}
+
+{% for i in range(16) %}
+color{{ i }} {{ t["color" ~ i] }}
+{% endfor %}

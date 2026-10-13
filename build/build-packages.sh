@@ -13,6 +13,9 @@ for dir in "$src"/pkg/*/; do
     echo ":: building $name"
     work=$(mktemp -d)
     cp -a "$dir". "$work"
+    # Packages built from repo code (not just files in pkg/<name>) list this tarball as a source.
+    tar -C "$src" -cf "$work/nullgrid-src.tar" --exclude=__pycache__ --exclude=.pytest_cache \
+        tools themes config tests/nullgrid
     chown -R builder: "$work"
     (cd "$work" && sudo -u builder PKGDEST="$work/out" makepkg --syncdeps --noconfirm --cleanbuild)
     cp "$work"/out/*.pkg.tar.* "$repo"/

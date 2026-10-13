@@ -1,0 +1,31 @@
+{{ header("/*", "*/") }}
+/* @import-ed by the NULLGRID GTK theme. */
+
+@define-color ng_bg {{ c.bg }};
+@define-color ng_bg_alt {{ c.bg_alt }};
+@define-color ng_surface {{ c.surface.rgba(style.surface_opacity) }};
+@define-color ng_primary {{ c.primary }};
+@define-color ng_secondary {{ c.secondary }};
+@define-color ng_glow {{ c.glow }};
+@define-color ng_text {{ c.text }};
+@define-color ng_dim {{ c.dim }};
+@define-color ng_warning {{ c.warning }};
+
+/* libadwaita / GTK4 named colors */
+@define-color accent_color {{ c.primary }};
+@define-color accent_bg_color {{ c.primary.mix(c.bg, 0.25) }};
+@define-color accent_fg_color {{ c.bg }};
+@define-color window_bg_color {{ c.bg }};
+@define-color window_fg_color {{ c.text }};
+@define-color view_bg_color {{ c.bg_alt }};
+@define-color view_fg_color {{ c.text }};
+@define-color headerbar_bg_color {{ c.surface }};
+@define-color headerbar_fg_color {{ c.text }};
+@define-color card_bg_color {{ c.surface }};
+@define-color card_fg_color {{ c.text }};
+@define-color popover_bg_color {{ c.surface }};
+@define-color popover_fg_color {{ c.text }};
+@define-color destructive_color {{ c.secondary }};
+@define-color warning_color {{ c.warning }};
+@define-color error_color {{ c.secondary }};
+@define-color success_color {{ t.color2 }};

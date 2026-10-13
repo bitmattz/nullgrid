@@ -1,0 +1,55 @@
+{{ header("#") }}
+# Sourced from hyprland.conf. The $ng_* variables are for the rest of the config.
+
+$ng_bg        = {{ c.bg.hypr() }}
+$ng_surface   = {{ c.surface.hypr(style.surface_opacity) }}
+$ng_primary   = {{ c.primary.hypr() }}
+$ng_secondary = {{ c.secondary.hypr() }}
+$ng_glow      = {{ c.glow.hypr() }}
+$ng_text      = {{ c.text.hypr() }}
+$ng_dim       = {{ c.dim.hypr() }}
+$ng_warning   = {{ c.warning.hypr() }}
+$ng_font_ui   = {{ fonts.ui }}
+$ng_font_mono = {{ fonts.mono }}
+
+general {
+    border_size = {{ style.border_width }}
+    gaps_in = {{ (style.gaps / 2) | round | int }}
+    gaps_out = {{ style.gaps }}
+    col.active_border = {{ c.glow.hypr() }} {{ c.secondary.hypr() }} 45deg
+    col.inactive_border = {{ c.dim.hypr(0.35) }}
+}
+
+decoration {
+    # Hyprland can't cut corners, so "chamfer" windows are square; panels get the chamfers.
+    rounding = {{ 10 if style.corners == "round" else 0 }}
+
+    blur {
+        enabled = {{ effects.blur | tf }}
+        size = 6
+        passes = 2
+        new_optimizations = true
+    }
+
+    shadow {
+        enabled = {{ effects.shadows | tf }}
+        range = {{ (style.glow * 24) | round | int }}
+        render_power = 2
+        color = {{ c.glow.hypr(style.glow * 0.55) }}
+        color_inactive = {{ c.bg.hypr(0.4) }}
+    }
+}
+
+animations {
+    enabled = {{ effects.animations | tf }}
+{% if effects.animations %}
+    # Quick, slightly mechanical: fast start, hard stop. Speeds are in deciseconds.
+    bezier = ng_mech, 0.2, 0.9, 0.1, 1.0
+    bezier = ng_snap, 0.5, 0, 0.1, 1.0
+    animation = windows, 1, {{ ms(180) / 100 }}, ng_mech, popin 92%
+    animation = windowsOut, 1, {{ ms(120) / 100 }}, ng_snap, popin 92%
+    animation = border, 1, {{ ms(220) / 100 }}, ng_mech
+    animation = fade, 1, {{ ms(150) / 100 }}, ng_mech
+    animation = workspaces, 1, {{ ms(200) / 100 }}, ng_mech, slide
+{% endif %}
+}

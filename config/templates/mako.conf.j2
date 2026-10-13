@@ -1,0 +1,23 @@
+{{ header("#") }}
+
+font={{ fonts.ui }} {{ fonts.size + 1 }}
+background-color={{ c.surface.hexa(style.surface_opacity) }}
+text-color={{ c.text }}
+border-color={{ c.primary }}
+progress-color=over {{ c.primary.hexa(0.35) }}
+border-size={{ style.border_width }}
+border-radius={{ 8 if style.corners == "round" else 0 }}
+padding=10,14
+margin=12
+width=360
+max-visible=4
+default-timeout=6000
+anchor=top-right
+
+[urgency=low]
+border-color={{ c.dim }}
+
+[urgency=critical]
+border-color={{ c.secondary }}
+background-color={{ c.bg_alt.hexa(0.95) }}
+default-timeout=0

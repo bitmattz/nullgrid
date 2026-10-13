@@ -1,0 +1,6 @@
+{{ header("#") }}
+# Sets the Linux console's 16 colors. Does nothing outside a console.
+[ "$TERM" = linux ] || return 0 2>/dev/null || exit 0
+{% for i in range(16) %}
+printf '\033]P{{ "%X" % i }}{{ t["color" ~ i].bare }}'
+{% endfor %}

@@ -1,0 +1,311 @@
+"""Render app configs from templates and hot-reload the apps that are running.
+
+templates/manifest.toml lists one entry per generated file:
+
+    [kitty]
+    template = "kitty.conf.j2"                         # path under a templates dir
+    target   = "{config_home}/kitty/nullgrid-theme.conf"
+    # optional reload hook, run only when the file changed (or on `theme reload`):
+    process  = "kitty"           # only if a process with this name runs (as this user)
+    signal   = "USR1"            # ...send it this signal, or:
+    reload   = ["makoctl", "reload"]                   # ...run this command
+    env      = "HYPRLAND_INSTANCE_SIGNATURE"           # only if this env var is set ("VAR=value" also works)
+    terminal = false             # let the reload command write to our terminal
+    enabled  = true
+
+A manifest.toml in ~/.config/nullgrid/templates/ is merged over the system one (add entries,
+change fields, or set enabled = false). Templates there shadow system templates by name.
+
+All templates render into memory first; nothing is written unless every one succeeds.
+Files whose content didn't change are left alone. A generated file that was edited by hand
+since nullgrid last wrote it is backed up to <name>.bak before being replaced.
+"""
+from __future__ import annotations
+
+import functools
+import hashlib
+import json
+import os
+import shutil
+import signal as signals
+import subprocess
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import jinja2
+
+from . import __version__
+from .color import Color
+from .config import Settings, atomic_write, read_toml
+from .paths import Paths
+from .schema import Bool, Str, StrList, Table
+
+TARGET = Table({
+    "template": Str(),
+    "target": Str(),
+    "process": Str(default=""),
+    "signal": Str(r"[A-Z0-9]+", hint="a signal name like 'USR1'", default=""),
+    "reload": StrList(default=[]),
+    "env": Str(default=""),
+    "terminal": Bool(default=False),
+    "enabled": Bool(default=True),
+    "mode": Str(r"0?[0-7]{3}", hint="a file mode like '644'", default="644"),
+})
+
+
+class RenderError(Exception):
+    pass
+
+
+@dataclass
+class Target:
+    name: str
+    template: str
+    path: Path
+    process: str = ""
+    signal: str = ""
+    reload: list[str] = field(default_factory=list)
+    env: str = ""
+    terminal: bool = False
+    mode: int = 0o644
+
+
+@dataclass
+class Report:
+    written: list[Target] = field(default_factory=list)
+    unchanged: list[Target] = field(default_factory=list)
+    backups: list[Path] = field(default_factory=list)
+    reloaded: list[str] = field(default_factory=list)
+    reload_failed: list[str] = field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- manifest
+def load_manifest(paths: Paths) -> list[Target]:
+    merged: dict[str, dict] = {}
+    for d in reversed(paths.templates):  # system first, user overrides
+        f = d / "manifest.toml"
+        if f.is_file():
+            for name, entry in read_toml(f).items():
+                if not isinstance(entry, dict):
+                    raise RenderError(f"{f}: [{name}] must be a table")
+                merged.setdefault(name, {}).update(entry)
+
+    targets = []
+    for name, raw in merged.items():
+        errors: list[str] = []
+        entry = TARGET.validate(raw, name, errors)
+        if errors:
+            raise RenderError("templates/manifest.toml: " + "; ".join(errors))
+        if not entry["enabled"]:
+            continue
+        targets.append(Target(
+            name=name,
+            template=entry["template"],
+            path=Path(entry["target"].format(config_home=paths.config_home, config_dir=paths.config_dir,
+                                             home=Path.home())).expanduser(),
+            process=entry["process"], signal=entry["signal"], reload=entry["reload"],
+            env=entry["env"], terminal=entry["terminal"], mode=int(entry["mode"], 8),
+        ))
+    return targets
+
+
+# --------------------------------------------------------------------------- context
+def context(settings: Settings) -> dict[str, Any]:
+    """Everything a template can use. See docs/CUSTOMIZING.md for the list."""
+    cfg, theme = settings.config, settings.theme
+    lite = cfg["performance"]["profile"] == "lite"
+    motion = not lite and not cfg["behavior"]["reduce_motion"]
+    speed = cfg["behavior"]["animation_speed"]
+    return {
+        "theme": theme,
+        "c": theme["colors"],
+        "t": theme["colors"]["terminal"],
+        "fonts": theme["fonts"],
+        "style": theme["style"],
+        "sound": cfg["sound"],
+        "widgets": cfg["widgets"],
+        "decor": cfg["decor"],
+        "behavior": cfg["behavior"],
+        "performance": cfg["performance"],
+        "effects": {
+            "blur": theme["style"]["blur"] and not lite,
+            "shadows": theme["style"]["glow"] > 0 and not lite,
+            "animations": motion,
+            "lite": lite,
+        },
+        "version": __version__,
+    }
+
+
+def _ms(base: float, ctx: dict) -> int:
+    """An animation duration scaled by behavior.animation_speed (0 when motion is off)."""
+    if not ctx["effects"]["animations"]:
+        return 0
+    return max(1, round(base / ctx["behavior"]["animation_speed"]))
+
+
+def _plain(value: Any) -> Any:
+    """Context -> JSON-able data (colors become '#rrggbb')."""
+    if isinstance(value, Color):
+        return value.hex
+    if isinstance(value, dict):
+        return {k: _plain(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(v) for v in value]
+    return value
+
+
+def environment(paths: Paths) -> jinja2.Environment:
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader([str(p) for p in paths.templates]),
+        undefined=jinja2.StrictUndefined,  # a typo in a template is an error, not an empty string
+        keep_trailing_newline=True,
+        trim_blocks=True,
+        lstrip_blocks=True,
+        autoescape=False,
+    )
+    env.filters["json"] = lambda v, indent=2: json.dumps(_plain(v), indent=indent, sort_keys=True)
+    env.filters["tf"] = lambda v: "true" if v else "false"
+    env.globals["Color"] = Color
+    return env
+
+
+def header(template: str, prefix: str, suffix: str = "") -> str:
+    """The 'generated, don't edit' comment, in the target's comment syntax."""
+    end = f" {suffix}" if suffix else ""
+    return (f"{prefix} Generated by nullgrid from {template}. Do not edit: changes are overwritten.{end}\n"
+            f"{prefix} Customize ~/.config/nullgrid/nullgrid.toml or override the template instead.{end}")
+
+
+def render_all(settings: Settings, paths: Paths, targets: list[Target]) -> dict[str, str]:
+    env = environment(paths)
+    ctx = context(settings)
+    out = {}
+    for t in targets:
+        try:
+            tpl = env.get_template(t.template)
+            out[t.name] = tpl.render(ctx, header=functools.partial(header, t.template),
+                                     ms=lambda base: _ms(base, ctx))
+        except jinja2.TemplateNotFound:
+            raise RenderError(f"{t.name}: template {t.template!r} not found") from None
+        except jinja2.TemplateError as exc:
+            where = f"{exc.filename}:{exc.lineno}" if getattr(exc, "lineno", None) else t.template
+            raise RenderError(f"{t.name}: {where}: {exc.message}") from None
+    return out
+
+
+# --------------------------------------------------------------------------- writing
+def _digest(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def read_state(paths: Paths) -> dict[str, str]:
+    try:
+        return json.loads(paths.state_file.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def check_drift(t: Target, state: dict[str, str]) -> str:
+    """'missing' | 'edited' (changed since nullgrid wrote it) | 'foreign' (not ours) | 'ok'."""
+    if not t.path.is_file():
+        return "missing"
+    current = _digest(t.path.read_text(errors="replace"))
+    recorded = state.get(str(t.path))
+    if recorded is None:
+        return "foreign"
+    return "ok" if recorded == current else "edited"
+
+
+def apply(settings: Settings, paths: Paths, *, reload: str = "changed", dry_run: bool = False) -> Report:
+    """Render and write every target. reload: 'changed' | 'all' | 'none'."""
+    targets = load_manifest(paths)
+    rendered = render_all(settings, paths, targets)
+    state = read_state(paths)
+    report = Report()
+    for t in targets:
+        text = rendered[t.name]
+        old = t.path.read_text(errors="replace") if t.path.is_file() else None
+        if old == text:
+            report.unchanged.append(t)
+            state[str(t.path)] = _digest(text)
+            continue
+        report.written.append(t)
+        if dry_run:
+            continue
+        if old is not None and state.get(str(t.path)) != _digest(old):
+            backup = t.path.with_name(t.path.name + ".bak")
+            shutil.copy2(t.path, backup)
+            report.backups.append(backup)
+        atomic_write(t.path, text, t.mode)
+        state[str(t.path)] = _digest(text)
+    if dry_run:
+        return report
+    atomic_write(paths.state_file, json.dumps(state, indent=1, sort_keys=True) + "\n")
+
+    to_reload = {"all": targets, "changed": report.written, "none": []}[reload]
+    for t in to_reload:
+        ok = run_reload(t)
+        if ok is True:
+            report.reloaded.append(t.name)
+        elif ok is False:
+            report.reload_failed.append(t.name)
+    return report
+
+
+# --------------------------------------------------------------------------- reloading
+def _processes(name: str) -> list[int]:
+    """PIDs of this user's processes whose name (comm) is name."""
+    uid = os.getuid()
+    pids = []
+    for entry in os.scandir("/proc"):
+        if not entry.name.isdigit():
+            continue
+        try:
+            if entry.stat().st_uid != uid:
+                continue
+            with open(f"/proc/{entry.name}/comm") as fh:
+                if fh.read().strip() == name:
+                    pids.append(int(entry.name))
+        except OSError:
+            continue
+    return pids
+
+
+def _env_matches(spec: str) -> bool:
+    if not spec:
+        return True
+    var, eq, want = spec.partition("=")
+    value = os.environ.get(var)
+    return value == want if eq else bool(value)
+
+
+def run_reload(t: Target) -> bool | None:
+    """True: reloaded. False: tried and failed. None: nothing to do (no hook, app not running)."""
+    if not (t.signal or t.reload) or not _env_matches(t.env):
+        return None
+    pids = _processes(t.process) if t.process else []
+    if t.process and not pids:
+        return None
+    if t.signal:
+        try:
+            sig = getattr(signals, f"SIG{t.signal}")
+        except AttributeError:
+            return False
+        sent = False
+        for pid in pids:
+            try:
+                os.kill(pid, sig)
+                sent = True
+            except OSError:
+                pass
+        return sent
+    argv = [a.format(target=t.path) for a in t.reload]
+    if shutil.which(argv[0]) is None:
+        return None
+    out = None if t.terminal else subprocess.DEVNULL
+    try:
+        return subprocess.run(argv, stdout=out, stderr=out, timeout=10).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False

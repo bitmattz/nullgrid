@@ -1,0 +1,27 @@
+{{ header("#") }}
+
+[main]
+font={{ fonts.ui }}:size={{ fonts.size + 2 }}
+prompt="> "
+icons-enabled=yes
+width=40
+lines=12
+horizontal-pad=18
+vertical-pad=12
+inner-pad=8
+
+[colors]
+background={{ c.surface.barea(style.surface_opacity) }}
+text={{ c.text.barea() }}
+prompt={{ c.primary.barea() }}
+input={{ c.text.barea() }}
+placeholder={{ c.dim.barea() }}
+match={{ c.primary.barea() }}
+selection={{ c.primary.mix(c.surface, 0.75).barea() }}
+selection-text={{ c.text.barea() }}
+selection-match={{ c.primary.barea() }}
+border={{ c.primary.barea() }}
+
+[border]
+width={{ style.border_width }}
+radius={{ 8 if style.corners == "round" else 0 }}

@@ -1,0 +1,149 @@
+# Customizing NULLGRID
+
+Everything about the look and behavior lives in one file, `~/.config/nullgrid/nullgrid.toml`.
+The `nullgrid` command reads it, renders a config file for each app from templates, and reloads
+the apps that are running. You never set the same color in twelve places.
+
+## The `nullgrid` command
+
+| Command | What it does |
+|---|---|
+| `nullgrid theme list` | list theme presets; `*` marks the active one, `[user]` your own |
+| `nullgrid theme set <name>` | switch preset, regenerate everything, reload running apps |
+| `nullgrid theme set <name> --reset-colors` | ...and drop your `[theme.colors]` overrides |
+| `nullgrid theme edit` | open `nullgrid.toml` in `$EDITOR`; on save it's validated, then applied. An invalid edit can be re-edited or reverted |
+| `nullgrid theme reload` | regenerate every file and reload every running app (`--dry-run`: only list what would change) |
+| `nullgrid widget list` / `widget toggle <name>` | show or hide a desktop widget |
+| `nullgrid mode` / `mode desktop\|tty` | print or set the session started at login |
+| `nullgrid doctor [-v]` | check config, themes, templates, generated files, fonts, session. Exit code 1 only on real errors |
+
+The first command that changes a setting creates `nullgrid.toml` from the commented default
+(`/usr/share/nullgrid/nullgrid.toml`). Edits made by the CLI keep your comments and formatting.
+A config that doesn't validate is never written and never applied: the last good files stay in place.
+
+## `nullgrid.toml`
+
+Every key is optional. Unknown keys are errors (with a "did you mean" hint), so typos don't
+silently do nothing.
+
+### `[theme]`
+
+| Key | Default | |
+|---|---|---|
+| `preset` | `"crimson-hud"` | a name from `nullgrid theme list` |
+| `[theme.colors]` | | override any palette color of the preset (see below) |
+| `[theme.colors.terminal]` | | override terminal colors |
+| `[theme.fonts]` | | `ui`, `mono`, `display` (font family names), `size`, `mono_size` (pt) |
+| `[theme.style]` | | `border_width` (0-8), `glow` (0-1), `corners` (`sharp`/`chamfer`/`round`), `surface_opacity`, `terminal_opacity` (0.3-1), `blur` (bool), `gaps` (px) |
+
+Overrides apply on top of whatever preset is active, also after `theme set`. `doctor -v` lists them.
+
+### `[sound]`
+
+`enabled`, `volume` (0-1), `pack` (`neural-link` / `minimal-ops`),
+`[sound.quiet_hours]` (`enabled`, `start`, `end` as `"HH:MM"`, `volume` multiplier) and
+`[sound.events]` with one entry per event, e.g. `window_open = { enabled = true, volume = 0.5 }`.
+
+Events: `boot login logout shutdown workspace_switch window_open window_close window_focus
+launcher_open launcher_close menu_hover button_click notification notification_critical
+volume_change brightness_change usb_connect usb_disconnect battery_low charger_plug screenshot
+error lock unlock terminal_bell command_done command_failed`. Off by default: `window_focus`,
+`menu_hover`, `terminal_bell`, `command_done`, `command_failed`. (The sound daemon arrives in phase 6.)
+
+### `[widgets]`
+
+`dock bar ram_gauge net_graph cpu_bars workspace_strip activity_grid`, each
+`{ visible = bool, position = "..." }` with positions `top bottom left right top-left top-right
+bottom-left bottom-right`.
+
+### `[decor]`, `[behavior]`, `[performance]`
+
+| Key | Default | |
+|---|---|---|
+| `decor.circuit_lines`, `matrix_rain`, `data_text` | `true` | wallpaper/overlay layers |
+| `decor.scanlines` | `false` | |
+| `behavior.animation_speed` | `1.0` | multiplier, 0.25-4 (2 = twice as fast) |
+| `behavior.reduce_motion` | `false` | no animations or glitch effects |
+| `behavior.default_mode` | `"desktop"` | `desktop` or `tty` |
+| `behavior.keybinds` | `"default"` | keybind set (phase 4) |
+| `performance.profile` | `"full"` | `lite`: no blur, shadows or animations; slower widget refresh |
+
+## Theme presets
+
+Presets live in `/usr/share/nullgrid/themes/` and `~/.config/nullgrid/themes/` (yours win on a
+name clash). To make your own, copy one, rename the file **and** `meta.name`:
+
+```sh
+mkdir -p ~/.config/nullgrid/themes
+cp /usr/share/nullgrid/themes/crimson-hud.toml ~/.config/nullgrid/themes/my-theme.toml
+$EDITOR ~/.config/nullgrid/themes/my-theme.toml     # set meta.name = "my-theme"
+nullgrid theme set my-theme
+```
+
+A preset needs `[meta] name`, the nine `[colors]` (`bg bg_alt surface primary secondary glow
+text dim warning`) and the 20 `[colors.terminal]` entries (`foreground background cursor
+selection color0`..`color15`). `[fonts]` and `[style]` are optional (defaults as in the table above).
+`doctor` warns when text or accent colors have too little contrast against the background.
+
+## Generated files
+
+| Name | File | Reloaded live |
+|---|---|---|
+| kitty | `~/.config/kitty/nullgrid-theme.conf` | yes (SIGUSR1) |
+| hyprland | `~/.config/hypr/nullgrid-theme.conf` | yes (`hyprctl reload`) |
+| hyprlock | `~/.config/hypr/nullgrid-hyprlock.conf` | read at each lock |
+| quickshell | `~/.config/nullgrid/generated/theme.json` | yes (file is watched) |
+| mako | `~/.config/mako/config` | yes (`makoctl reload`) |
+| fuzzel | `~/.config/fuzzel/fuzzel.ini` | read at each launch |
+| btop | `~/.config/btop/themes/nullgrid.theme` | at next start |
+| nvim | `~/.config/nvim/lua/nullgrid/palette.lua` | at next start |
+| gtk | `~/.config/nullgrid/generated/gtk-colors.css` | phase 7 |
+| qt | `~/.config/qt6ct/colors/nullgrid.conf` | at next start |
+| tty | `~/.config/nullgrid/generated/tty-palette.sh` | yes, when run on a console |
+
+Most are fragments that the app's main config includes, so the rest of that config stays yours.
+If you edit a generated file by hand, the next render saves your version as `<file>.bak` before
+replacing it (`doctor` tells you beforehand). Files whose content didn't change aren't touched,
+and only apps whose file changed are reloaded.
+
+## Templates
+
+Templates are [Jinja](https://jinja.palletsprojects.com/) files in `/usr/share/nullgrid/templates/`,
+listed in its `manifest.toml`. To change one, copy it to `~/.config/nullgrid/templates/` under the
+same name. To add an app, put a template there and a `manifest.toml` next to it:
+
+```toml
+[foot]
+template = "foot.ini.j2"
+target = "{config_home}/foot/colors.ini"     # also {config_dir} = ~/.config/nullgrid, {home}
+process = "foot"                             # optional reload hook: only if foot is running...
+signal = "USR1"                              # ...send it a signal, or
+# reload = ["some-cmd", "--reload", "{target}"]   ...run a command
+# env = "WAYLAND_DISPLAY"                    # only if this env var is set (or "VAR=value")
+
+[btop]
+enabled = false                              # stop generating a system target
+```
+
+What templates can use:
+
+| Name | Contents |
+|---|---|
+| `c` | the palette: `c.bg`, `c.primary`, ... |
+| `t` | terminal colors: `t.foreground`, `t.color0`..`t.color15`, ... |
+| `fonts`, `style` | the resolved `[fonts]` / `[style]` |
+| `theme` | the whole theme, incl. `theme.meta.name` |
+| `sound`, `widgets`, `decor`, `behavior`, `performance` | the config sections |
+| `effects` | `blur`, `shadows`, `animations`, `lite` after applying `performance.profile` and `reduce_motion` |
+| `ms(base)` | an animation duration in ms scaled by `animation_speed` (0 when motion is off) |
+| `header(prefix[, suffix])` | the "generated, don't edit" comment in the file's comment syntax |
+| `Color("#rrggbb")` | make a color |
+| `\| json`, `\| tf` | filters: JSON dump (colors as `"#rrggbb"`); `true`/`false` |
+
+Colors print as `#rrggbb` and have formats and math built in:
+`.hex` `.bare` (`rrggbb`) `.rgb` (`r, g, b`) `.hexa(a)` (`#rrggbbaa`) `.barea(a)` `.argb(a)`
+(`#aarrggbb`, Qt) `.rgba(a)` (CSS) `.hypr(a)` (`rgba(rrggbbaa)`, Hyprland),
+`.mix(other, t)` `.lighten(t)` `.darken(t)` `.contrast(other)`.
+
+Templates use `StrictUndefined`: a misspelled name is an error, and when any template fails
+nothing is written. `nullgrid doctor` renders all of them as a check.

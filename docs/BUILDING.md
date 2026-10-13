@@ -19,7 +19,8 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make repo` | builds every `pkg/*/PKGBUILD` into the local pacman repo `out/repo/` |
 | `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (for Hyprland, later phases) |
-| `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager |
+| `make test` | unit + snapshot tests of the `nullgrid` tool, in the builder container |
+| `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, and that `nullgrid` can switch themes and passes `doctor` |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 
@@ -39,3 +40,16 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 The ISO is a standard hybrid image. It boots in VirtualBox, virt-manager or VMware (UEFI or BIOS),
 or from a USB stick (`dd if=out/nullgrid-*.iso of=/dev/sdX bs=4M status=progress oflag=sync`).
 The live user is `nullgrid` with passwordless sudo.
+
+## Working on the `nullgrid` tool without building an ISO
+
+From a checkout, the tool finds `themes/` and `config/templates/` in the repo by itself:
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install jinja2 tomlkit pytest
+PYTHONPATH=tools/nullgrid .venv/bin/python -m nullgrid theme list
+.venv/bin/python -m pytest tests/nullgrid
+```
+
+Set `HOME` (or `XDG_CONFIG_HOME` and `XDG_STATE_HOME`) to a scratch directory to keep it away
+from your own configs.

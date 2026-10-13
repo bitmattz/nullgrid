@@ -1,0 +1,48 @@
+# Near-black with cold blue and white: quiet, clinical.
+
+[meta]
+name = "ice-protocol"
+description = "near-black, cold blue and white"
+author = "NULLGRID"
+
+[colors]
+bg        = "#070a0f"
+bg_alt    = "#0d1420"
+surface   = "#0f1824"
+primary   = "#8fd8ff"
+secondary = "#3d7bff"
+glow      = "#6fb6ff"
+text      = "#eef6ff"
+dim       = "#6b7d90"
+warning   = "#ffc857"
+
+[colors.terminal]
+foreground = "#eef6ff"
+background = "#070a0f"
+cursor     = "#8fd8ff"
+selection  = "#1c3048"
+color0  = "#141c28"
+color1  = "#ff5c7a"
+color2  = "#5fe0c0"
+color3  = "#ffc857"
+color4  = "#3d7bff"
+color5  = "#a58bff"
+color6  = "#8fd8ff"
+color7  = "#b4c4d6"
+color8  = "#3a4a5e"
+color9  = "#ff8aa0"
+color10 = "#8ff0d8"
+color11 = "#ffdc8f"
+color12 = "#79a6ff"
+color13 = "#c3b2ff"
+color14 = "#bfe9ff"
+color15 = "#f7fbff"
+
+[fonts]
+ui      = "Rajdhani"
+mono    = "JetBrains Mono"
+display = "Orbitron"
+
+[style]
+corners = "sharp"
+glow    = 0.4

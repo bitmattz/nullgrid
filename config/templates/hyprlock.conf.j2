@@ -1,0 +1,17 @@
+{{ header("#") }}
+# Sourced from hyprlock.conf.
+
+$ng_bg        = {{ c.bg.hypr() }}
+$ng_bg_alt    = {{ c.bg_alt.hypr() }}
+$ng_surface   = {{ c.surface.hypr(style.surface_opacity) }}
+$ng_primary   = {{ c.primary.hypr() }}
+$ng_secondary = {{ c.secondary.hypr() }}
+$ng_glow      = {{ c.glow.hypr() }}
+$ng_text      = {{ c.text.hypr() }}
+$ng_dim       = {{ c.dim.hypr() }}
+$ng_warning   = {{ c.warning.hypr() }}
+$ng_font_ui      = {{ fonts.ui }}
+$ng_font_mono    = {{ fonts.mono }}
+$ng_font_display = {{ fonts.display }}
+$ng_border    = {{ style.border_width }}
+$ng_rounding  = {{ 10 if style.corners == "round" else 0 }}

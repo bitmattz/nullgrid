@@ -1,0 +1,49 @@
+# Black with acid green and yellow: loud, high-voltage.
+
+[meta]
+name = "toxic-grid"
+description = "black, acid green and yellow"
+author = "NULLGRID"
+
+[colors]
+bg        = "#050605"
+bg_alt    = "#0c110a"
+surface   = "#10160d"
+primary   = "#b6ff3b"
+secondary = "#f4e409"
+glow      = "#9dff00"
+text      = "#eaf5e0"
+dim       = "#6f7d66"
+warning   = "#ff9f1c"
+
+[colors.terminal]
+foreground = "#eaf5e0"
+background = "#050605"
+cursor     = "#b6ff3b"
+selection  = "#24331a"
+color0  = "#151b12"
+color1  = "#ff4f3a"
+color2  = "#b6ff3b"
+color3  = "#f4e409"
+color4  = "#3ac1ff"
+color5  = "#d46bff"
+color6  = "#3dffc5"
+color7  = "#b9c7ae"
+color8  = "#3c4a34"
+color9  = "#ff7f6e"
+color10 = "#d4ff85"
+color11 = "#fff166"
+color12 = "#7dd6ff"
+color13 = "#e3a3ff"
+color14 = "#8fffe0"
+color15 = "#f6fbf0"
+
+[fonts]
+ui      = "Rajdhani"
+mono    = "JetBrains Mono"
+display = "Orbitron"
+
+[style]
+corners = "chamfer"
+glow    = 0.8
+terminal_opacity = 0.95

@@ -1,0 +1,16 @@
+{{ header("--") }}
+-- require("nullgrid.palette") from the nullgrid colorscheme.
+
+return {
+  name = "{{ theme.meta.name }}",
+{% for key in ["bg", "bg_alt", "surface", "primary", "secondary", "glow", "text", "dim", "warning"] %}
+  {{ key }} = "{{ c[key] }}",
+{% endfor %}
+  terminal = {
+{% for i in range(16) %}
+    "{{ t["color" ~ i] }}",
+{% endfor %}
+  },
+  selection = "{{ t.selection }}",
+  transparent = {{ (style.terminal_opacity < 1) | tf }},
+}

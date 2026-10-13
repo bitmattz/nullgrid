@@ -1,0 +1,18 @@
+{# Qt palette roles, in qt6ct's order:
+   WindowText Button Light Midlight Dark Mid Text BrightText ButtonText Base Window Shadow
+   Highlight HighlightedText Link LinkVisited AlternateBase NoRole ToolTipBase ToolTipText
+   PlaceholderText #}
+{% macro palette(text, accent) -%}
+{% for color in [text, c.surface, c.surface.lighten(0.15), c.surface.lighten(0.08), c.bg, c.bg_alt,
+                 text, c.text.lighten(0.5), text, c.bg_alt, c.bg, Color("#000000"),
+                 accent.mix(c.bg, 0.3), c.text, c.primary, c.glow, c.surface, c.bg,
+                 c.surface, c.text, c.dim] -%}
+{{ color.argb() }}{{ ", " if not loop.last }}
+{%- endfor %}
+{%- endmacro %}
+{{ header("#") }}
+
+[ColorScheme]
+active_colors={{ palette(c.text, c.primary) }}
+inactive_colors={{ palette(c.text, c.primary.mix(c.dim, 0.5)) }}
+disabled_colors={{ palette(c.dim, c.dim) }}
