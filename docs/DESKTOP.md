@@ -2,8 +2,9 @@
 
 Logging in on tty1 starts the desktop when `nullgrid mode` is `desktop` (the default). It's a
 Hyprland session with neon window borders, a generated HUD wallpaper, and the NULLGRID shell:
-status bar, dock, HUD widgets, start menu and notifications. Sway takes over on GPUs where
-Hyprland can't start, and when `[performance] profile = "lite"` is set.
+status bar, dock, HUD widgets, start menu and notifications, with UI sounds from the
+`nullgrid-sfx` daemon ([SOUND.md](SOUND.md)). Sway takes over on GPUs where Hyprland can't
+start, and when `[performance] profile = "lite"` is set.
 
 ## Keybinds
 
@@ -29,6 +30,13 @@ defaults:
 | `SUPER+1..0` / `SUPER+SHIFT+1..0` | go to / move the window to workspace 1-10 |
 | `SUPER+mouse` | left button drags a window, right button resizes it |
 | `SUPER+SHIFT+E` | leave the desktop (back to the tty1 shell; `nullgrid-session` starts it again) |
+| volume keys, mute, mic mute | volume of the default output (PipeWire), with a tick; they also work on the lock screen |
+| brightness keys | screen brightness (brightnessctl), with a tick; also on the lock screen |
+
+Lock, leave and the media keys run small scripts that also play the matching sound:
+`nullgrid-lock`, `nullgrid-power logout|reboot|poweroff|suspend` (the start menu's power
+buttons use it too) and `nullgrid-media volume up|down|mute`, `mic mute`,
+`brightness up|down`.
 
 ### Your own keybinds
 

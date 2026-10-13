@@ -1,0 +1,21 @@
+#!/bin/sh
+# nullgrid-power logout|reboot|poweroff|suspend
+# Plays the matching sound (logout/shutdown) to the end, then does it. The start menu's power
+# buttons and the "leave the desktop" keybind use it.
+set -u
+sfx() { command -v nullgrid-sfx >/dev/null && nullgrid-sfx play "$1" --wait; }
+case "${1:-}" in
+    logout)
+        sfx logout
+        if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+            hyprctl dispatch 'hl.dsp.exit()' >/dev/null
+        elif [ -n "${SWAYSOCK:-}" ]; then
+            swaymsg exit >/dev/null
+        else
+            echo "nullgrid-power: not in a Hyprland or Sway session" >&2; exit 1
+        fi ;;
+    reboot)   sfx shutdown; exec systemctl reboot ;;
+    poweroff) sfx shutdown; exec systemctl poweroff ;;
+    suspend)  exec systemctl suspend ;;
+    *) echo "usage: nullgrid-power logout|reboot|poweroff|suspend" >&2; exit 2 ;;
+esac

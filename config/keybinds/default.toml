@@ -36,6 +36,14 @@ workspace = "SUPER"
 move_to_workspace = "SUPER+SHIFT"
 exit = "SUPER+SHIFT+E"
 
+# hardware keys (they also work on the lock screen)
+volume_up = "XF86AudioRaiseVolume"
+volume_down = "XF86AudioLowerVolume"
+volume_mute = "XF86AudioMute"
+mic_mute = "XF86AudioMicMute"
+brightness_up = "XF86MonBrightnessUp"
+brightness_down = "XF86MonBrightnessDown"
+
 # Extra binds: combo = command
 [exec]
 "SUPER+B" = "kitty --class nullgrid-btop btop"

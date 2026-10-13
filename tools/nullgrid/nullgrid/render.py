@@ -137,6 +137,7 @@ def context(settings: Settings) -> dict[str, Any]:
         "fonts": theme["fonts"],
         "style": theme["style"],
         "sound": cfg["sound"],
+        "sound_on": [e for e, v in cfg["sound"]["events"].items() if cfg["sound"]["enabled"] and v["enabled"]],
         "widgets": cfg["widgets"],
         "decor": cfg["decor"],
         "behavior": cfg["behavior"],
@@ -345,6 +346,19 @@ def _processes(name: str) -> list[int]:
     return pids
 
 
+def _catches(pid: int, sig: int) -> bool:
+    """Whether the process has a handler for sig. A process still starting up (or one that
+    never handles it) would be killed by signals like SIGUSR1 or SIGHUP, so it's skipped."""
+    try:
+        with open(f"/proc/{pid}/status") as fh:
+            for line in fh:
+                if line.startswith("SigCgt:"):
+                    return bool(int(line.split()[1], 16) >> (sig - 1) & 1)
+    except (OSError, ValueError):
+        pass
+    return False
+
+
 def _env_matches(spec: str) -> bool:
     if not spec:
         return True
@@ -365,8 +379,11 @@ def run_reload(t: Target) -> bool | None:
             sig = getattr(signals, f"SIG{t.signal}")
         except AttributeError:
             return False
+        targets = [pid for pid in pids if _catches(pid, sig)]
+        if not targets:
+            return None  # only processes that would die of it (e.g. a kitty still starting)
         sent = False
-        for pid in pids:
+        for pid in targets:
             try:
                 os.kill(pid, sig)
                 sent = True

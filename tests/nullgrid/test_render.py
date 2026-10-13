@@ -11,7 +11,7 @@ from nullgrid import config, render
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 UPDATE = os.environ.get("NULLGRID_UPDATE_SNAPSHOTS") == "1"
-ALL_TARGETS = {"kitty", "hyprland", "hyprland-keys", "sway", "sway-keys", "wallpaper", "hyprlock",
+ALL_TARGETS = {"kitty", "hyprland", "hyprland-keys", "sway", "sway-keys", "wallpaper", "hyprlock", "sfx",
                "quickshell", "fuzzel", "btop", "nvim", "gtk", "qt", "tty", "shell-env", "starship",
                "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty", "lazygit", "cava", "cava-tty", "banner"}
 N = len(ALL_TARGETS)
@@ -163,10 +163,29 @@ def test_reload_command_and_gates(monkeypatch):
 
 def test_reload_signal(monkeypatch):
     sent = []
-    monkeypatch.setattr(render, "_processes", lambda name: [111, 222] if name == "kitty" else [])
+    monkeypatch.setattr(render, "_processes", lambda name: [111, 222, 333] if name == "kitty" else [])
+    monkeypatch.setattr(render, "_catches", lambda pid, sig: pid != 333)  # 333 is still starting up
     monkeypatch.setattr(render.os, "kill", lambda pid, sig: sent.append((pid, sig)))
     assert render.run_reload(target(process="kitty", signal="USR1")) is True
     assert sent == [(111, render.signals.SIGUSR1), (222, render.signals.SIGUSR1)]
+    monkeypatch.setattr(render, "_catches", lambda pid, sig: False)
+    assert render.run_reload(target(process="kitty", signal="USR1")) is None
+
+
+def test_catches_reads_the_signal_mask():
+    import signal
+    import subprocess
+    import sys
+    code = "import signal, sys, time; signal.signal(signal.SIGUSR1, lambda *a: None); print(1, flush=True); time.sleep(30)"
+    proc = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE)
+    try:
+        proc.stdout.readline()  # the handler is installed
+        assert render._catches(proc.pid, signal.SIGUSR1)
+        assert not render._catches(proc.pid, signal.SIGUSR2)
+    finally:
+        proc.kill()
+        proc.wait()
+    assert not render._catches(999_999_999, signal.SIGUSR1)
 
 
 def test_reload_only_changed(paths, monkeypatch):

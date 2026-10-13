@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from . import config as cfgmod
 from . import render
+from . import sound
 from .paths import Paths
 
 OK, INFO, WARN, FAIL = "ok", "info", "warn", "FAIL"
@@ -126,6 +127,33 @@ def run(paths: Paths) -> list[Check]:
         for tool, pkg in (("swaybg", "swaybg"), ("rsvg-convert", "librsvg")):
             if not shutil.which(tool):
                 add(WARN, f"{tool} not found (package {pkg}): no wallpaper")
+
+    # -- sound --------------------------------------------------------------
+    snd = settings.config["sound"]
+    where = sound.find_pack(paths, snd["pack"])
+    if where is None:
+        known = ", ".join(sound.list_packs(paths)) or "none installed"
+        add(WARN, f"sound.pack: no sound pack named {snd['pack']!r} ({known}); no sounds")
+    else:
+        try:
+            pack = sound.load_pack(where)
+            add(OK, f"sound pack {pack.name!r}: {len(pack.sounds)} sounds" + ("" if snd["enabled"] else " (muted)"))
+        except cfgmod.ConfigError as exc:
+            for p in exc.problems:
+                add(WARN, f"{exc.source}: {p}")
+    if sound.player() is None:
+        add(WARN, "no audio player (pw-play, paplay or aplay): no sounds. Install pipewire-audio")
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime and shutil.which("pipewire"):
+        if os.path.exists(os.path.join(runtime, "pipewire-0")):
+            add(OK, "PipeWire is running")
+        else:
+            add(WARN, "PipeWire is not running: no sound. Try: systemctl --user start pipewire wireplumber")
+    if os.environ.get("WAYLAND_DISPLAY") and shutil.which("nullgrid-sfx"):
+        if sound.request("status", reply=True) is None:
+            add(WARN, "the sound daemon is not running: desktop events make no sound. Start it: nullgrid-sfx daemon &")
+        else:
+            add(OK, "sound daemon running")
 
     if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
         add(OK, "running inside Hyprland")

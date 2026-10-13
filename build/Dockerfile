@@ -6,7 +6,7 @@ FROM archlinux:latest
 RUN pacman -Syu --noconfirm --needed \
         archiso base-devel git sudo pacman-contrib \
         python python-jinja python-tomlkit python-pytest python-textual python-psutil \
-        python-build python-installer python-flit-core lua \
+        python-build python-installer python-flit-core python-numpy lua \
         qemu-base qemu-hw-display-virtio-vga qemu-hw-display-virtio-gpu edk2-ovmf \
         quickshell sway swaybg grim librsvg hyprlock dbus libnotify ttf-jetbrains-mono \
     && pacman -Scc --noconfirm

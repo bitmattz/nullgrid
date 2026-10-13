@@ -4,11 +4,10 @@
     "close": "kill",
     "fullscreen": "fullscreen toggle",
     "float": "floating toggle",
-    "exit": "exit",
 } %}
 {% for b in binds %}
 {% if b.command %}
-bindsym {{ b.combo | sway_combo }} exec {{ b.command | json }}
+bindsym {{ "--locked " if b.hardware }}{{ b.combo | sway_combo }} exec {{ b.command | json }}
 {% elif b.action == "workspace" %}
 bindsym {{ b.combo | sway_combo }} workspace number {{ b.workspace }}
 {% elif b.action == "move_to_workspace" %}

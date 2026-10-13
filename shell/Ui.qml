@@ -6,6 +6,7 @@ import Quickshell
 Singleton {
     property bool menuOpen: false
     function toggleMenu() { menuOpen = !menuOpen }
+    onMenuOpenChanged: Sfx.play(menuOpen ? "launcher_open" : "launcher_close")
 
     // Apps pinned to the dock (and shown as favorites in the start menu). `app` is the window
     // class that marks the app as running/active.

@@ -1,0 +1,36 @@
+# NULLGRID sound: the nullgrid-sfx daemon and the sound packs. The packs are synthesized at build
+# time by assets/sounds/generate.py (numpy), so the repo holds no audio files.
+pkgname=nullgrid-sfx
+pkgver=0.6.0
+pkgrel=1
+pkgdesc="NULLGRID sound daemon and generated sound packs"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=(
+  'python' 'nullgrid-core'
+  'pipewire' 'pipewire-audio' 'wireplumber'   # pw-play plays the sounds
+  'systemd'                                   # udevadm monitor: USB and charger events
+)
+makedepends=('python-build' 'python-installer' 'python-flit-core' 'python-numpy')
+checkdepends=('python-pytest')
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+build() {
+  (cd tools/nullgrid-sfx && python -m build --wheel --no-isolation)
+  python assets/sounds/generate.py --out sounds
+}
+
+check() {
+  python -c "import sys; sys.path.insert(0, 'tools/nullgrid-sfx'); import nullgrid_sfx as s; \
+    assert s.__version__ == '$pkgver', 'pkgver and nullgrid_sfx.__version__ differ'"
+  PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/nullgrid_sfx
+}
+
+package() {
+  (cd tools/nullgrid-sfx && python -m installer --destdir="$pkgdir" dist/*.whl)
+  for pack in sounds/*/; do
+    install -Dm644 -t "$pkgdir/usr/share/nullgrid/sounds/$(basename "$pack")" "$pack"*
+  done
+}

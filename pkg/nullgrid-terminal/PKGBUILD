@@ -1,7 +1,7 @@
 # NULLGRID terminal experience: zsh setup, default dotfiles (copied into homes by
 # `nullgrid init`), the ASCII logo, and the terminal apps themselves.
 pkgname=nullgrid-terminal
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc="NULLGRID terminal experience: kitty, zsh, starship and themed TUI apps"
 arch=('any')

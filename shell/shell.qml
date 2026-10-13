@@ -3,6 +3,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 
 // The NULLGRID desktop shell (Quickshell): status bar, dock, HUD widgets, start menu,
 // notifications and the animated matrix layer. Colors, fonts and layout come from
@@ -34,7 +35,8 @@ ShellRoot {
         function openMenu(): void { Ui.menuOpen = true }
         function closeMenu(): void { Ui.menuOpen = false }
         function status(): string {
-            return `theme=${Theme.name} wm=${Wm.name} menu=${Ui.menuOpen} cpu=${Math.round(Sys.cpu)} mem=${Math.round(Sys.memPct)}`
+            const audio = Pipewire.ready && Pipewire.defaultAudioSink !== null
+            return `theme=${Theme.name} wm=${Wm.name} menu=${Ui.menuOpen} cpu=${Math.round(Sys.cpu)} mem=${Math.round(Sys.memPct)} audio=${audio}`
         }
     }
 }

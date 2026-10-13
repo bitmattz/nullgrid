@@ -2,33 +2,31 @@
 # defaults, the session launcher, and the wallpaper tooling. The look and the keybinds are
 # generated per user by nullgrid-core from nullgrid.toml.
 pkgname=nullgrid-desktop
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc="NULLGRID desktop session: Hyprland with a Sway fallback, HUD wallpaper"
 arch=('any')
 url="https://github.com/bitmattz/nullgrid"
 license=('MIT')
 depends=(
-  'nullgrid-core' 'nullgrid-terminal'
+  'nullgrid-core' 'nullgrid-terminal' 'nullgrid-sfx'
   'hyprland' 'sway'                    # compositors
   'swaybg' 'librsvg'                   # wallpaper: shown by swaybg, SVG rendered by rsvg-convert
   'quickshell'                         # the shell: bar, dock, HUD widgets, start menu, notifications
   'fuzzel' 'hyprlock'                  # keyboard launcher, lock screen (themed by nullgrid-core)
   'brightnessctl'                      # brightness keys and the bar's brightness control
+  'wireplumber'                        # wpctl: the volume keys (nullgrid-media)
   'grim' 'slurp' 'wl-clipboard' 'libnotify'   # nullgrid-screenshot
 )
 source=('nullgrid-src.tar')
 sha256sums=('SKIP')
 
 check() {
-  sh -n tools/session/nullgrid-session
-  sh -n tools/session/nullgrid-screenshot
-  sh -n tools/session/nullgrid-shell
+  for f in tools/session/*; do sh -n "$f"; done
 }
 
 package() {
-  install -Dm755 -t "$pkgdir/usr/bin" tools/session/nullgrid-session tools/session/nullgrid-screenshot \
-    tools/session/nullgrid-shell
+  install -Dm755 -t "$pkgdir/usr/bin" tools/session/*
   # the Quickshell config: `qs -c nullgrid` (a copy in ~/.config/quickshell/nullgrid/ wins)
   install -Dm644 -t "$pkgdir/etc/xdg/quickshell/nullgrid" shell/*.qml shell/*.js
   install -Dm644 config/hypr/nullgrid.lua "$pkgdir/usr/share/nullgrid/hypr/nullgrid.lua"

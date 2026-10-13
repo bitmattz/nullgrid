@@ -22,6 +22,10 @@ updates. Put your own settings below that line.
   - In kitty: angular powerline segments `user@host`, `dir`, `git`, with command duration and a clock on the right.
   - On the Linux console: a variant that only uses glyphs the console font has.
 - **History** in `~/.local/state/zsh/history` (50k entries, shared between shells).
+- **Sounds** (off by default): a chime when a command that ran 10 s or more finishes, and another
+  when a command fails. Turn them on with `command_done` / `command_failed` under
+  `[sound.events]`; kitty's bell can play the pack's bell too (`terminal_bell`). See
+  [SOUND.md](SOUND.md).
 
 ### Aliases
 

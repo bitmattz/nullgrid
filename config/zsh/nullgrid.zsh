@@ -94,6 +94,36 @@ else
   PROMPT="%F{$NULLGRID_ANSI_PRIMARY}[%n@%m]%f %F{$NULLGRID_ANSI_SECONDARY}%~%f %# "
 fi
 
+# --- sounds: a long command finished, a command failed ---------------------------
+# Off by default ([sound.events] command_done / command_failed). The event goes straight to
+# the nullgrid-sfx socket (zsh/net/socket): no process is started per prompt.
+if [[ -n $NULLGRID_SFX_SHELL ]] && zmodload zsh/net/socket zsh/datetime 2>/dev/null; then
+  _ng_sfx() {
+    zsocket ${XDG_RUNTIME_DIR:-/tmp}/nullgrid-sfx.sock 2>/dev/null || return 0
+    local fd=$REPLY
+    print -u $fd "play $1"
+    exec {fd}>&-
+  }
+  _ng_sfx_preexec() { _ng_sfx_start=$EPOCHREALTIME }
+  _ng_sfx_precmd() {
+    local st=$?
+    if [[ -n $_ng_sfx_start ]]; then
+      local took=$(( EPOCHREALTIME - _ng_sfx_start ))
+      unset _ng_sfx_start
+      # 130/148: stopped with Ctrl-C / Ctrl-Z, not a failure
+      if (( st != 0 && st != 130 && st != 148 )); then
+        [[ " $NULLGRID_SFX_SHELL " == *" command_failed "* ]] && _ng_sfx command_failed
+      elif (( took >= 10 )); then
+        [[ " $NULLGRID_SFX_SHELL " == *" command_done "* ]] && _ng_sfx command_done
+      fi
+    fi
+    return $st  # the prompt (starship) still sees the command's status
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook preexec _ng_sfx_preexec
+  precmd_functions=(_ng_sfx_precmd $precmd_functions)  # first, to read the command's $?
+fi
+
 # --- login banner ----------------------------------------------------------------
 if [[ -o login ]]; then
   [[ -r $XDG_CONFIG_HOME/nullgrid/generated/banner ]] && cat $XDG_CONFIG_HOME/nullgrid/generated/banner

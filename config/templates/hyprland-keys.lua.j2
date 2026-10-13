@@ -4,11 +4,10 @@
     "close": "hl.dsp.window.close()",
     "fullscreen": "hl.dsp.window.fullscreen()",
     "float": 'hl.dsp.window.float({ action = "toggle" })',
-    "exit": "hl.dsp.exit()",
 } %}
 {% for b in binds %}
 {% if b.command %}
-hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.exec_cmd({{ b.command | lua }}))
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.exec_cmd({{ b.command | lua }}){{ (", { locked = true, repeating = true }" if b.repeats else ", { locked = true }") if b.hardware }})
 {% elif b.action == "workspace" %}
 hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.focus({ workspace = {{ b.workspace }} }))
 {% elif b.action == "move_to_workspace" %}

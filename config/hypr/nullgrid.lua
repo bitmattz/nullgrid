@@ -67,6 +67,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("nullgrid wallpaper apply --quiet")
     hl.exec_cmd("nullgrid-shell")  -- bar, dock, HUD widgets, start menu, notifications
+    hl.exec_cmd("nullgrid-sfx daemon")  -- UI sounds; exits with the session
 end)
 -- A new screen gets a wallpaper rendered for its size.
 hl.on("monitor.added", function()

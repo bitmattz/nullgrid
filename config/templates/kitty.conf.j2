@@ -27,3 +27,8 @@ tab_bar_background      {{ c.bg }}
 {% for i in range(16) %}
 color{{ i }} {{ t["color" ~ i] }}
 {% endfor %}
+{% if sound.enabled and sound.events.terminal_bell.enabled %}
+
+# [sound] events.terminal_bell: the bell plays the sound pack's bell
+command_on_bell nullgrid-sfx play terminal_bell
+{% endif %}

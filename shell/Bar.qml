@@ -151,13 +151,13 @@ PanelWindow {
                 icon: "wifi"
                 visible: Networking.wifiHardwareEnabled
                 on: Networking.wifiEnabled
-                onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
+                onClicked: { Sfx.play("button_click"); Networking.wifiEnabled = !Networking.wifiEnabled }
             }
             Toggle {
                 icon: "bluetooth"
                 visible: Bluetooth.defaultAdapter !== null
                 on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false
-                onClicked: Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled
+                onClicked: { Sfx.play("button_click"); Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled }
             }
             Toggle {
                 icon: "brightness"
@@ -165,7 +165,7 @@ PanelWindow {
                 on: true
                 value: Backlight.percent
                 onClicked: {}
-                onScrolled: up => Backlight.step(up ? 5 : -5)
+                onScrolled: up => { Backlight.step(up ? 5 : -5); Sfx.play("brightness_change") }
             }
             Toggle {
                 id: volume
@@ -175,8 +175,11 @@ PanelWindow {
                 visible: Pipewire.ready && sink !== null
                 on: sink && sink.audio ? !sink.audio.muted : false
                 value: sink && sink.audio ? sink.audio.volume * 100 : NaN
-                onClicked: sink.audio.muted = !sink.audio.muted
-                onScrolled: up => sink.audio.volume = Math.max(0, Math.min(1, sink.audio.volume + (up ? 0.05 : -0.05)))
+                onClicked: { sink.audio.muted = !sink.audio.muted; Sfx.play("volume_change") }
+                onScrolled: up => {
+                    sink.audio.volume = Math.max(0, Math.min(1, sink.audio.volume + (up ? 0.05 : -0.05)))
+                    Sfx.play("volume_change")
+                }
             }
         }
 

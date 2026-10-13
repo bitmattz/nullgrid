@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-13: Phase 5 DONE, next is Phase 6
+### Status as of 2026-10-13: Phase 6 DONE, next is Phase 7
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -345,9 +345,44 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - Shell test loop: `tests/shell_smoke.sh` pattern (dbus-run-session, sway copy without caps,
   `WLR_BACKENDS=headless WLR_RENDERER=pixman`, grim) gives screenshots in seconds.
 
-**Next step, Phase 6 (sound):** `assets/sounds/generate.py` (numpy synthesis; numpy must be added
-to the builder) -> packs `neural-link` and `minimal-ops` with `pack.toml`; `nullgrid-sfx` daemon
-(pw-play; PipeWire + WirePlumber join the ISO); hooks: Hyprland event socket, udev, UPower
-D-Bus, the shell's NotificationServer (Notifications.qml can call `nullgrid-sfx` or a socket),
-zsh precmd for command done/failed; `nullgrid sound list|set|test|mute`; quiet hours and
-per-event volume from `[sound]`. Then verify cava (needs PipeWire) and the bar's volume toggle.
+**Phase 6 delivered:**
+- `assets/sounds/generate.py`: numpy synthesis (osc/FM/envelopes/FFT filters/bitcrush/Schroeder
+  reverb), loudness-matched, deterministic -> packs `neural-link`, `minimal-ops` (27 events each,
+  WAV 48k mono, `pack.toml`). Built in the `nullgrid-sfx` PKGBUILD (numpy = makedepend; also in
+  the builder image); `make sounds` -> `out/sounds` (the system sound dir in a checkout).
+- Core: `nullgrid/sound.py` (pack find/validate, `volume()` with quiet hours, player, socket
+  client), `nullgrid sound list|set|test|mute|volume`, doctor checks (pack, player, PipeWire,
+  daemon). Manifest target `sfx` -> `generated/sfx.json`, SIGHUP to process `nullgrid-sfx`.
+  Paths: user packs in `~/.local/share/nullgrid/sounds/`.
+- `tools/nullgrid-sfx/` (package `nullgrid-sfx` 0.6.0): `daemon.py` (selector loop: unix socket
+  `$XDG_RUNTIME_DIR/nullgrid-sfx.sock` with play/playwait/status/reload/quit, Hyprland socket2 or
+  swaymsg subscribe, udevadm monitor, battery poll; pw-play children; per-event 80 ms gap, max 4
+  at once; exits with the compositor), `sources.py` (parsers), `cli.py` (`nullgrid-sfx
+  daemon|play EVENT [--wait]|status|reload|quit`; play falls back to playing directly).
+- Hooks: shell `Sfx.qml` (Quickshell `Socket`): menu open/close, clicks, hover, notifications
+  (respects `suppress-sound`), bar volume/brightness scroll, menu no-match error. Scripts
+  `nullgrid-lock`, `nullgrid-power logout|reboot|poweroff|suspend`, `nullgrid-media`; new keybind
+  actions volume_up/down/mute, mic_mute, brightness_up/down (`locked`); lock/exit use the scripts.
+  zsh: command_done (>= 10 s) / command_failed via `zsh/net/socket`; kitty `command_on_bell`.
+- ISO: pipewire, pipewire-audio, wireplumber, pipewire-pulse, pipewire-alsa, pipewire-jack,
+  sof-firmware. `run-vm.sh` sound to host (`AUDIO`), `--audio-wav=FILE` for the boot test.
+- Tests: `make test` = 181 (generator output, packs, rules, CLI, daemon end to end with a fake
+  pw-play and fake Hyprland socket). `make test-shell` checks daemon + shell/Sway sounds + mute.
+  `make test-boot` records the VM's audio and checks a sound comes out, the volume key, lock
+  sounds, boot/login sounds, cava. Docs: `docs/SOUND.md`, phase-6 section in DECISIONS.
+
+**Gotchas learned (phase 6):**
+- Never signal a process that doesn't catch the signal: a kitty that is still starting dies of
+  SIGUSR1. `render.run_reload` checks `SigCgt` in /proc/PID/status.
+- Loading a module with dataclasses via importlib needs `sys.modules[name] = mod` first.
+- Two fake players started together log in either order: compare sorted in tests.
+- `python -m pkg` processes are named `python`; the daemon sets its name with prctl so the
+  manifest's `process = "nullgrid-sfx"` finds it however it was started.
+- cava pulls `jack`: without `pipewire-jack` in the package list, pacman picks jack2.
+- QEMU `-audiodev wav,path=...` records the guest's sound card; `sendkey volumeup` works.
+
+**Next step, Phase 7 (GTK/Qt/icons/cursor/Plymouth/greeter):** GTK3/4 theme from
+`generated/gtk-colors.css`, Qt via qt6ct/Kvantum (`qt6ct-colors.conf` exists), original line
+icon theme (circular outline) + open-licensed fallback, cursor theme, Plymouth "system boot"
+splash (scanline + lattice logo + fake boot log; the logo's moving hole animates), greetd +
+tuigreet theme (live ISO keeps autologin). Theme switch must restyle GTK/Qt apps live.

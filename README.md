@@ -4,11 +4,12 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 5 (shell UI)**. The ISO boots into a Hyprland desktop (Sway as fallback and
+> Status: **phase 6 (sound)**. The ISO boots into a Hyprland desktop (Sway as fallback and
 > lite session) with the NULLGRID shell: status bar, dock, HUD widgets, start menu, notifications
-> and a HUD lock screen, over a generated wallpaper. TTY mode gives a themed dashboard instead.
-> Everything, down to zsh, kitty and neovim, is styled from one TOML file by the `nullgrid` tool.
-> Sounds, GTK/Qt theming and the installer come in later phases (see `CLAUDE.md` section 9).
+> and a HUD lock screen, over a generated wallpaper, with synthesized UI sounds on PipeWire.
+> TTY mode gives a themed dashboard instead. Everything, down to zsh, kitty and neovim, is styled
+> from one TOML file by the `nullgrid` tool. GTK/Qt theming, the boot splash and the installer
+> come in later phases (see `CLAUDE.md` section 9).
 
 ## Screenshots
 
@@ -30,7 +31,8 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software ren
 ```sh
 make iso         # build out/nullgrid-*.iso inside Docker (any Linux host)
 make run         # boot it in QEMU (UEFI); needs qemu + OVMF on the host
-make test        # unit + snapshot tests of the nullgrid tool (Docker)
+make test        # unit + snapshot tests of the nullgrid tool and the sound daemon (Docker)
+make sounds      # synthesize the sound packs into out/sounds (Docker)
 make test-shell  # the desktop shell in a headless Sway: QML errors, IPC, screenshots (Docker)
 make test-boot   # headless boot test; needs only Docker
 ```
@@ -39,6 +41,7 @@ make test-boot   # headless boot test; needs only Docker
 nullgrid theme list               # crimson-hud, ice-protocol, toxic-grid
 nullgrid theme set ice-protocol   # restyle everything live
 nullgrid keys                     # the desktop keybinds (SUPER+/ shows them too)
+nullgrid sound test all           # hear the active sound pack; sound set minimal-ops, sound mute
 nullgrid mode tty                 # log in to the TTY dashboard instead of the desktop
 nullgrid doctor                   # check config and generated files
 ```
@@ -51,6 +54,7 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [CUSTOMIZING.md](docs/CUSTOMIZING.md): `nullgrid.toml`, themes, templates
 - [DESKTOP.md](docs/DESKTOP.md): the desktop session, keybinds, wallpaper
 - [TERMINAL.md](docs/TERMINAL.md): shell, apps, TTY mode and the dashboard
+- [SOUND.md](docs/SOUND.md): UI sounds, events, sound packs
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo

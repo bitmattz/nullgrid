@@ -9,3 +9,5 @@ export NULLGRID_REDUCE_MOTION={{ 1 if behavior.reduce_motion else 0 }}
 {% for role, index in ansi_roles.items() %}
 export NULLGRID_ANSI_{{ role | upper }}={{ index }}
 {% endfor %}
+# Sounds the zsh hooks play through nullgrid-sfx: the shell events switched on in [sound].
+export NULLGRID_SFX_SHELL="{{ ["command_done", "command_failed"] | select("in", sound_on) | join(" ") }}"

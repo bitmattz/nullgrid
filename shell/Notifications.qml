@@ -15,7 +15,11 @@ Scope {
         imageSupported: true
         bodyMarkupSupported: false
         persistenceSupported: false
-        onNotification: n => { n.tracked = true }
+        onNotification: n => {
+            n.tracked = true
+            if (!(n.hints && n.hints["suppress-sound"]))
+                Sfx.play(n.urgency === NotificationUrgency.Critical ? "notification_critical" : "notification")
+        }
     }
 
     readonly property var shown: server.trackedNotifications.values.slice().reverse().slice(0, 5)
@@ -93,7 +97,7 @@ Scope {
                         width: actionText.implicitWidth + 20; height: 24
                         Chamfer { anchors.fill: parent; cut: 5; fill: "transparent"; stroke: Theme.alpha(card.accent, 0.7) }
                         NgText { id: actionText; anchors.centerIn: parent; text: modelData.text; font.pixelSize: 12 }
-                        MouseArea { anchors.fill: parent; onClicked: modelData.invoke() }
+                        MouseArea { anchors.fill: parent; onClicked: { Sfx.play("button_click"); modelData.invoke() } }
                     }
                 }
             }

@@ -54,6 +54,8 @@ PanelWindow {
         if (i >= 0 && i < items.length) {
             items[i].run()
             Ui.menuOpen = false
+        } else {
+            Sfx.play("error")  // Enter with nothing matching
         }
     }
 
@@ -130,7 +132,7 @@ PanelWindow {
                     Rectangle { visible: current; width: 2; height: parent.height; color: Theme.primary }
                     NgIcon { x: 12; anchors.verticalCenter: parent.verticalCenter; name: modelData.icon; size: 16; color: current ? Theme.primary : Theme.dim }
                     NgText { x: 38; anchors.verticalCenter: parent.verticalCenter; text: modelData.name.toUpperCase(); font.letterSpacing: 1; color: current ? Theme.text : Theme.dim }
-                    MouseArea { id: catMouse; anchors.fill: parent; hoverEnabled: true; onClicked: { search.text = ""; menu.category = modelData.name; menu.selected = 0; search.forceActiveFocus() } }
+                    MouseArea { id: catMouse; anchors.fill: parent; hoverEnabled: true; onClicked: { Sfx.play("button_click"); search.text = ""; menu.category = modelData.name; menu.selected = 0; search.forceActiveFocus() } }
                 }
             }
         }
@@ -180,7 +182,7 @@ PanelWindow {
                     id: appMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    onEntered: menu.selected = index
+                    onEntered: { menu.selected = index; Sfx.play("menu_hover") }
                     onClicked: menu.run(index)
                 }
             }
@@ -198,12 +200,12 @@ PanelWindow {
         Row {
             anchors { right: parent.right; rightMargin: 24; bottom: parent.bottom; bottomMargin: 14 }
             spacing: 8
-            PowerButton { glyph: "lock"; text: "LOCK"; command: "hyprlock" }
-            PowerButton { glyph: "logout"; text: "LOG OUT"; confirm: true
-                          command: Wm.hyprland ? "hyprctl dispatch 'hl.dsp.exit()'" : "swaymsg exit" }
-            PowerButton { glyph: "sleep"; text: "SLEEP"; command: "systemctl suspend" }
-            PowerButton { glyph: "restart"; text: "RESTART"; confirm: true; command: "systemctl reboot" }
-            PowerButton { glyph: "power"; text: "SHUT DOWN"; confirm: true; command: "systemctl poweroff"; danger: true }
+            // nullgrid-lock / nullgrid-power play the lock, logout and shutdown sounds first
+            PowerButton { glyph: "lock"; text: "LOCK"; command: "nullgrid-lock" }
+            PowerButton { glyph: "logout"; text: "LOG OUT"; confirm: true; command: "nullgrid-power logout" }
+            PowerButton { glyph: "sleep"; text: "SLEEP"; command: "nullgrid-power suspend" }
+            PowerButton { glyph: "restart"; text: "RESTART"; confirm: true; command: "nullgrid-power reboot" }
+            PowerButton { glyph: "power"; text: "SHUT DOWN"; confirm: true; command: "nullgrid-power poweroff"; danger: true }
         }
     }
 
@@ -227,7 +229,7 @@ PanelWindow {
             anchors.fill: parent
             hoverEnabled: true
             onClicked: {
-                if (pb.confirm && !pb.armed) { pb.armed = true; disarm.restart(); return }
+                if (pb.confirm && !pb.armed) { pb.armed = true; disarm.restart(); Sfx.play("button_click"); return }
                 Ui.menuOpen = false
                 Wm.exec(pb.command)
             }

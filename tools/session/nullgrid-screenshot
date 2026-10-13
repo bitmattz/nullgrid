@@ -1,7 +1,9 @@
 #!/bin/sh
 # nullgrid-screenshot region|screen
-# Save a screenshot to ~/Pictures/Screenshots, copy it to the clipboard, and say so.
-set -eu
+# Save a screenshot to ~/Pictures/Screenshots, copy it to the clipboard, and say so (with the
+# shutter sound, or the error sound when the capture fails).
+set -u
+sfx() { command -v nullgrid-sfx >/dev/null && nullgrid-sfx play "$1"; }
 dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
 mkdir -p "$dir"
 file=$dir/$(date +%Y-%m-%d_%H-%M-%S).png
@@ -11,5 +13,11 @@ case ${1:-region} in
     screen) grim "$file" ;;
     *) echo "usage: nullgrid-screenshot region|screen" >&2; exit 2 ;;
 esac
+if [ $? -ne 0 ] || [ ! -s "$file" ]; then
+    sfx error
+    notify-send --app-name=nullgrid -u critical "Screenshot failed" "grim could not capture the screen" 2>/dev/null
+    exit 1
+fi
+sfx screenshot
 wl-copy --type image/png < "$file" 2>/dev/null || true
-notify-send --app-name=nullgrid --icon="$file" "Screenshot saved" "$file" 2>/dev/null || true
+notify-send --app-name=nullgrid --icon="$file" -h boolean:suppress-sound:true "Screenshot saved" "$file" 2>/dev/null || true

@@ -231,6 +231,57 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   `swaybg` in /proc, which made `wallpaper apply` think it was running.
 - All NULLGRID packages except fonts and base are 0.5.0.
 
+## Phase 6
+
+- **Sounds are synthesized at package build time**, not stored in git. `assets/sounds/generate.py`
+  (numpy) builds both packs in about 7 s, deterministically (a seed per sound), and the
+  `nullgrid-sfx` PKGBUILD runs it; numpy is a build dependency only. The repo stays free of
+  binary audio, and a recipe change can be reviewed as code.
+- **WAV, 48 kHz mono, 16-bit.** 48 kHz is PipeWire's default rate (no resampling), mono is
+  enough for UI sounds, and WAV needs no decoder. Both packs together are 1.2 MB.
+- **Loudness-matched, not peak-normalized.** Peak normalization left the crushed buzzes far louder
+  than the sine blips at the same peak. Each sound is scaled so its loudest 50 ms has the target
+  RMS (ticks -8 dB, alerts +3 dB relative to the pack level), with a -1 dBFS peak ceiling.
+  minimal-ops sits 5 dB below neural-link.
+- **The daemon is Python** (like the rest of the tooling): one `select()` loop over its socket,
+  the compositor's event stream, `udevadm monitor` and signals, with a battery poll every 60 s.
+  No CPU while idle (0 ticks over a minute in the VM; 21 MB RSS); it starts `pw-play` per sound
+  and never waits for it. A long-lived PipeWire stream would save `pw-play`'s startup (some tens
+  of ms), but needs native bindings; that delay isn't noticeable for UI sounds. PipeWire and
+  WirePlumber add about 30 MB; pipewire-pulse only starts when a PulseAudio client connects.
+- **Who reports what:** the compositor gives workspace/window events (Hyprland socket2, `swaymsg
+  -t subscribe`); the shell reports its own UI (menu, clicks, notifications) over the daemon's
+  socket with Quickshell's `Socket`, so nothing is spawned per click; the hardware keys go
+  through `nullgrid-media`; lock and power actions through `nullgrid-lock` and `nullgrid-power`,
+  which wait for the sound before logging out or shutting down. Lock/unlock can't come from
+  Hyprland: it has no lock event in its socket.
+- **Power events from udev + /sys, not UPower.** `udevadm monitor` reports USB devices and power
+  supply changes; the daemon then reads `/sys/class/power_supply`. UPower would be one more
+  service on the ISO for the same information.
+- **zsh writes to the socket directly** (`zsh/net/socket`), so the command-done/failed hooks cost
+  no process per prompt, and only run when those events are switched on (`NULLGRID_SFX_SHELL`
+  in the generated shell-env). `command_done` only sounds for commands of 10 s or longer.
+- **The daemon's settings are a generated file** (`generated/sfx.json`, a manifest target with
+  `process = "nullgrid-sfx"`, `signal = "HUP"`), like the shell's theme.json: the same render
+  and reload path as every other app, no TOML parsing in the daemon.
+- **Reload signals only go to processes that handle them** (`SigCgt` in `/proc/PID/status`).
+  The boot test caught `nullgrid theme set` killing a kitty that was still starting: SIGUSR1's
+  default action is to terminate, and kitty installs its handler a moment after it starts.
+- **The daemon belongs to the session:** it exits when the compositor's event stream closes, and
+  a new daemon asks an old one to quit before taking the socket. `boot` plays for the first
+  session after the machine started (boot id kept in `~/.local/state/nullgrid/sfx-boot-id`),
+  `login` for later ones.
+- **Media keys are new keybind actions** (`volume_up` ... `brightness_down`) on the XF86 keys,
+  bound with `locked` (they work on the lock screen; volume and brightness also repeat), and
+  `lock` / `exit` now run `nullgrid-lock` / `nullgrid-power logout`.
+- **PipeWire on the ISO:** pipewire, wireplumber, pipewire-pulse (browsers, cava), pipewire-alsa,
+  pipewire-jack (cava depends on JACK; this avoids a jack2 server) and sof-firmware (sound on many
+  recent laptops). The user units are enabled globally by the packages' install hooks. cava,
+  which crashed without an audio server in phase 3, now runs.
+- **The boot test listens:** QEMU records the VM's HDA output to a WAV file, and the test checks
+  that `nullgrid sound test` makes it non-silent. `make run` sends the VM's sound to the host.
+- All NULLGRID packages except fonts and base are 0.6.0; new package `nullgrid-sfx`.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

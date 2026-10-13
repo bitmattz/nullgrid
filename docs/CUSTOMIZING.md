@@ -48,12 +48,14 @@ Overrides apply on top of whatever preset is active, also after `theme set`. `do
 `enabled`, `volume` (0-1), `pack` (`neural-link` / `minimal-ops`),
 `[sound.quiet_hours]` (`enabled`, `start`, `end` as `"HH:MM"`, `volume` multiplier) and
 `[sound.events]` with one entry per event, e.g. `window_open = { enabled = true, volume = 0.5 }`.
+The `nullgrid sound` commands change the common ones; [SOUND.md](SOUND.md) explains every event
+and how to make a sound pack.
 
 Events: `boot login logout shutdown workspace_switch window_open window_close window_focus
 launcher_open launcher_close menu_hover button_click notification notification_critical
 volume_change brightness_change usb_connect usb_disconnect battery_low charger_plug screenshot
 error lock unlock terminal_bell command_done command_failed`. Off by default: `window_focus`,
-`menu_hover`, `terminal_bell`, `command_done`, `command_failed`. (The sound daemon arrives in phase 6.)
+`menu_hover`, `terminal_bell`, `command_done`, `command_failed`.
 
 ### `[widgets]`
 

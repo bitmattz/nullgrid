@@ -53,6 +53,13 @@ target = "{config_home}/hypr/nullgrid-hyprlock.conf"
 template = "theme.json.j2"
 target = "{config_dir}/generated/theme.json"
 
+[sfx]
+# The sound daemon (nullgrid-sfx) reads [sound] from here; SIGHUP makes it re-read the file.
+template = "sfx.json.j2"
+target = "{config_dir}/generated/sfx.json"
+process = "nullgrid-sfx"
+signal = "HUP"
+
 [fuzzel]
 template = "fuzzel.ini.j2"
 target = "{config_home}/fuzzel/fuzzel.ini"

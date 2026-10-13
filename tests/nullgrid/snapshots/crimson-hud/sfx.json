@@ -1,0 +1,121 @@
+{
+  "enabled": true,
+  "events": {
+    "battery_low": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "boot": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "brightness_change": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "button_click": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "charger_plug": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "command_done": {
+      "enabled": false,
+      "volume": 1.0
+    },
+    "command_failed": {
+      "enabled": false,
+      "volume": 1.0
+    },
+    "error": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "launcher_close": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "launcher_open": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "lock": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "login": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "logout": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "menu_hover": {
+      "enabled": false,
+      "volume": 1.0
+    },
+    "notification": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "notification_critical": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "screenshot": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "shutdown": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "terminal_bell": {
+      "enabled": false,
+      "volume": 1.0
+    },
+    "unlock": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "usb_connect": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "usb_disconnect": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "volume_change": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "window_close": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "window_focus": {
+      "enabled": false,
+      "volume": 1.0
+    },
+    "window_open": {
+      "enabled": true,
+      "volume": 1.0
+    },
+    "workspace_switch": {
+      "enabled": true,
+      "volume": 1.0
+    }
+  },
+  "pack": "neural-link",
+  "quiet_hours": {
+    "enabled": false,
+    "end": "07:00",
+    "start": "22:00",
+    "volume": 0.3
+  },
+  "volume": 0.6
+}

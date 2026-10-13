@@ -13,3 +13,5 @@ export NULLGRID_ANSI_GLOW=2
 export NULLGRID_ANSI_TEXT=15
 export NULLGRID_ANSI_DIM=8
 export NULLGRID_ANSI_WARNING=11
+# Sounds the zsh hooks play through nullgrid-sfx: the shell events switched on in [sound].
+export NULLGRID_SFX_SHELL=""

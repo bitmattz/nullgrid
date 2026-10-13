@@ -1,8 +1,9 @@
 #!/bin/bash
 # Shell smoke test (make test-shell): run the NULLGRID Quickshell config in a headless Sway inside
 # the builder container. Fails on any QML error or warning from our files, checks the IPC
-# interface, and saves screenshots to out/screens/shell-*.png (desktop, start menu,
-# notifications, lock screen) for a human to look at.
+# interface and the sound daemon (a fake pw-play logs what would be heard), and saves
+# screenshots to out/screens/shell-*.png (desktop, start menu, notifications, lock screen) for a
+# human to look at.
 set -u
 src=/src
 out=$src/out/screens
@@ -16,9 +17,13 @@ ls $src/out/repo/nullgrid-fonts-*.pkg.tar.zst >/dev/null 2>&1 && pacman -U --noc
 
 export HOME=$(mktemp -d) XDG_RUNTIME_DIR=$(mktemp -d)
 chmod 700 $XDG_RUNTIME_DIR
-export PYTHONPATH=$src/tools/nullgrid PYTHONDONTWRITEBYTECODE=1 XDG_CONFIG_HOME=$HOME/.config
+export PYTHONPATH=$src/tools/nullgrid:$src/tools/nullgrid-sfx PYTHONDONTWRITEBYTECODE=1 XDG_CONFIG_HOME=$HOME/.config
 bin=$(mktemp -d); export PATH=$bin:$PATH
 printf '#!/bin/sh\nexec python -m nullgrid "$@"\n' > $bin/nullgrid; chmod +x $bin/nullgrid
+printf '#!/bin/sh\nexec python -m nullgrid_sfx "$@"\n' > $bin/nullgrid-sfx; chmod +x $bin/nullgrid-sfx
+# no sound card here: this pw-play only notes which sound it was given
+printf '#!/bin/sh\nfor a; do f=$a; done; basename "$f" .wav >> $HOME/played.log\n' > $bin/pw-play; chmod +x $bin/pw-play
+python $src/assets/sounds/generate.py --out $HOME/.local/share/nullgrid/sounds >/dev/null
 mkdir -p $HOME/.config/quickshell && ln -s $src/shell $HOME/.config/quickshell/nullgrid
 nullgrid init -q
 
@@ -41,6 +46,11 @@ for i in $(seq 100); do ls $XDG_RUNTIME_DIR/wayland-? >/dev/null 2>&1 && break; 
 export WAYLAND_DISPLAY=$(cd $XDG_RUNTIME_DIR && ls -d wayland-? | head -1) SWAYSOCK=$(ls $XDG_RUNTIME_DIR/sway-ipc.* | head -1)
 sleep 1
 nullgrid wallpaper apply -q && ok "wallpaper" || bad "wallpaper apply"
+nullgrid-sfx daemon --no-startup-sound 2>$HOME/sfx.log &
+played() { grep -qx "$1" $HOME/played.log 2>/dev/null; }
+for i in $(seq 50); do nullgrid-sfx status >/dev/null 2>&1 && break; sleep 0.1; done
+sfx=$(nullgrid-sfx status 2>&1)
+[[ $sfx == *'"pack": "neural-link"'*'"sway"'* ]] && ok "sound daemon: $sfx" || bad "sound daemon: $sfx"
 quickshell -c nullgrid >$HOME/qs.log 2>&1 &
 for i in $(seq 100); do grep -q "Configuration Loaded" $HOME/qs.log && break; sleep 0.1; done
 grep -q "Configuration Loaded" $HOME/qs.log && ok "shell loaded" || bad "shell did not load"
@@ -60,11 +70,21 @@ sleep 0.3
 notify-send -a battery -u critical "Battery critical" "5% left, plug in the charger." &
 sleep 1.5
 grim $out/shell-notifications.png
+played notification && played notification_critical && ok "notification sounds" || bad "no notification sounds: $(tr '\n' ' ' < $HOME/played.log)"
 quickshell -c nullgrid ipc call shell openMenu
 sleep 1.5
 [[ $(quickshell -c nullgrid ipc call shell status) == *menu=true* ]] && ok "start menu opens" || bad "start menu did not open"
 grim $out/shell-menu.png
 quickshell -c nullgrid ipc call shell closeMenu
+sleep 0.5
+played launcher_open && played launcher_close && ok "menu sounds" || bad "no menu sounds: $(tr '\n' ' ' < $HOME/played.log)"
+swaymsg -q workspace 2; sleep 0.5; swaymsg -q workspace 1; sleep 0.5
+played workspace_switch && ok "workspace sound (sway events)" || bad "no workspace sound"
+nullgrid sound mute on >/dev/null; sleep 0.5
+[[ $(nullgrid-sfx status) == *'"enabled": false'* ]] && ok "mute reached the daemon" || bad "mute not picked up: $(nullgrid-sfx status)"
+n=$(wc -l < $HOME/played.log); nullgrid-sfx play login; sleep 0.5
+[[ $(wc -l < $HOME/played.log) == "$n" ]] && ok "muted: silent" || bad "played while muted"
+nullgrid sound mute off >/dev/null
 
 nullgrid theme set ice-protocol >/dev/null
 sleep 2
@@ -80,6 +100,7 @@ if command -v hyprlock >/dev/null; then
     ok "lock screen screenshot"
 fi
 qml_problems | grep -q . && { bad "QML problems after interaction:"; qml_problems | tail -10; }
+nullgrid-sfx quit >/dev/null
 pkill quickshell; pkill sway-nocap
 exit $fail
 SESSION

@@ -15,6 +15,7 @@ from . import config as cfgmod
 from . import keybinds as kbmod
 from . import paths as pathmod
 from . import render
+from . import sound
 from . import wallpaper
 
 # --------------------------------------------------------------------------- output
@@ -217,6 +218,115 @@ def cmd_wallpaper_apply(args, paths) -> None:
             print(f"{out.name} {out.width}x{out.height}: {png}")
 
 
+# --------------------------------------------------------------------------- sound
+def cmd_sound_list(args, paths) -> None:
+    try:
+        current = cfgmod.load(paths).config["sound"]["pack"]
+    except cfgmod.ConfigError:
+        current = None
+    packs = sound.list_packs(paths)
+    if not packs:
+        raise Fail("no sound packs found (they come with the nullgrid-sfx package)")
+    width = max(map(len, packs))
+    for name, where in packs.items():
+        mark = paint("*", "head") if name == current else " "
+        try:
+            pack = sound.load_pack(where)
+            desc = f"{pack.description}  " + paint(f"({len(pack.sounds)} sounds)", "dim")
+        except cfgmod.ConfigError:
+            desc = paint("(broken: run nullgrid doctor)", "warn")
+        user = paint(" [user]", "dim") if where.is_relative_to(paths.sounds[0]) else ""
+        print(f"{mark} {name.ljust(width)}  {desc}{user}")
+
+
+def _pack(paths, name: str) -> sound.Pack:
+    where = sound.find_pack(paths, name)
+    if where is None:
+        names = list(sound.list_packs(paths))
+        hint = difflib.get_close_matches(name, names, n=1)
+        raise Fail(f"no sound pack named {name!r}" + (f" (did you mean {hint[0]!r}?)" if hint else "")
+                   + f". Available: {', '.join(names) or 'none'}")
+    return sound.load_pack(where)
+
+
+def _save_sound(paths, key: str, value) -> None:
+    doc = cfgmod.ConfigDocument(paths)
+    doc.set(f"sound.{key}", value)
+    doc.save()
+    apply_quietly(paths)
+
+
+def apply_quietly(paths) -> None:
+    """Regenerate (sfx.json -> the daemon re-reads it); only problems are printed."""
+    report = render.apply(cfgmod.load(paths), paths)
+    for b in report.backups:
+        print(paint("note:", "warn"), f"{b.with_suffix('')} had hand edits; saved them to {b}")
+    if report.reload_failed:
+        print(paint("warn:", "warn"), f"reload failed for: {', '.join(report.reload_failed)}")
+
+
+def cmd_sound_set(args, paths) -> None:
+    pack = _pack(paths, args.name)  # refuse a broken pack before touching the config
+    _save_sound(paths, "pack", pack.name)
+    print(f"sound pack: {pack.name} ({len(pack.sounds)} sounds)")
+
+
+def cmd_sound_test(args, paths) -> None:
+    cfg = cfgmod.load(paths).config["sound"]
+    pack = _pack(paths, args.pack or cfg["pack"])
+    if args.event == "all":
+        events = list(pack.sounds)
+    elif args.event not in cfgmod.SOUND_EVENTS:
+        hint = difflib.get_close_matches(args.event, cfgmod.SOUND_EVENTS, n=1)
+        raise Fail(f"no event named {args.event!r}" + (f" (did you mean {hint[0]!r}?)" if hint else "")
+                   + ". Events: " + ", ".join(cfgmod.SOUND_EVENTS))
+    elif args.event not in pack.sounds:
+        raise Fail(f"pack {pack.name!r} has no sound for {args.event!r}")
+    else:
+        events = [args.event]
+    if sound.player() is None:
+        raise Fail("no audio player found: install pipewire-audio (pw-play)")
+    if not cfg["enabled"]:
+        print(paint("note:", "warn"), "sound is muted (nullgrid sound mute off); playing anyway")
+    for event in events:
+        s = pack.sounds[event]
+        vol = sound.volume(cfg, event, s.volume, test=True)
+        if len(events) > 1 or args.verbose:
+            off = "" if cfg["events"][event]["enabled"] else paint("  (off in your config)", "dim")
+            print(f"{event.ljust(24)} {s.path.name}  vol {vol:.2f}{off}")
+        sound.play(s.path, vol, wait=True)
+
+
+def cmd_sound_mute(args, paths) -> None:
+    enabled = cfgmod.load(paths).config["sound"]["enabled"]
+    if args.state == "on":
+        enabled = False
+    elif args.state == "off":
+        enabled = True
+    else:
+        enabled = not enabled
+    _save_sound(paths, "enabled", enabled)
+    print("sound: " + ("on" if enabled else "muted"))
+
+
+def cmd_sound_volume(args, paths) -> None:
+    if args.level is None:
+        print(cfgmod.load(paths).config["sound"]["volume"])
+        return
+    _save_sound(paths, "volume", args.level)
+    print(f"sound volume: {args.level}")
+
+
+def _level(text: str) -> float:
+    try:
+        v = float(text)
+    except ValueError:
+        v = -1
+    if not 0 <= v <= 1:
+        raise argparse.ArgumentTypeError(f"expected a volume from 0 to 1, got {text!r}")
+    return v
+
+
 # --------------------------------------------------------------------------- widgets / mode
 def cmd_widget_list(args, paths) -> None:
     widgets = cfgmod.load(paths).config["widgets"]
@@ -317,6 +427,24 @@ def build_parser() -> argparse.ArgumentParser:
     wa = wpsub.add_parser("apply", help="render for each screen of this session and show it (swaybg)")
     wa.add_argument("-q", "--quiet", action="store_true")
     wa.set_defaults(func=cmd_wallpaper_apply)
+
+    snd = sub.add_parser("sound", help="sound packs, test sounds, mute")
+    ssub = snd.add_subparsers(dest="action", required=True, metavar="ACTION")
+    ssub.add_parser("list", help="show available sound packs (* = active)").set_defaults(func=cmd_sound_list)
+    s = ssub.add_parser("set", help="switch sound pack")
+    s.add_argument("name")
+    s.set_defaults(func=cmd_sound_set)
+    s = ssub.add_parser("test", help="play an event's sound, or all of them")
+    s.add_argument("event", help="an event name (e.g. notification), or 'all'")
+    s.add_argument("--pack", help="from this pack instead of the active one")
+    s.add_argument("-v", "--verbose", action="store_true", help="print the file and volume")
+    s.set_defaults(func=cmd_sound_test)
+    s = ssub.add_parser("mute", help="mute or unmute all sounds (no argument: toggle)")
+    s.add_argument("state", nargs="?", choices=("on", "off"), help="on = muted")
+    s.set_defaults(func=cmd_sound_mute)
+    s = ssub.add_parser("volume", help="print or set the master volume (0-1)")
+    s.add_argument("level", nargs="?", type=_level)
+    s.set_defaults(func=cmd_sound_volume)
 
     widget = sub.add_parser("widget", help="show or hide desktop widgets")
     wsub = widget.add_subparsers(dest="action", required=True, metavar="ACTION")

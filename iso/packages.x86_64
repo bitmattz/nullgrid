@@ -48,6 +48,8 @@ nullgrid-fonts
 nullgrid-terminal
 # desktop session: Hyprland/Sway defaults, nullgrid-session, wallpaper tools
 nullgrid-desktop
+# sound daemon (nullgrid-sfx) and the generated sound packs
+nullgrid-sfx
 
 ## Terminal experience (also pulled in by nullgrid-terminal; listed so the ISO's contents are explicit)
 # main terminal emulator (GPU-rendered, live config reload)
@@ -78,6 +80,22 @@ git
 cava
 # terminal multiplexer with the HUD status bar
 tmux
+
+## Sound (PipeWire; started per user by systemd socket activation)
+# audio server
+pipewire
+# ALSA/Bluetooth support and pw-play, which plays the UI sounds
+pipewire-audio
+# session manager: picks the default output, keeps volumes (wpctl)
+wireplumber
+# PulseAudio clients (browsers, cava, pactl) talk to PipeWire through it
+pipewire-pulse
+# plain ALSA clients go through PipeWire too
+pipewire-alsa
+# provides JACK (cava needs it) through PipeWire, instead of a separate jack2 server
+pipewire-jack
+# Intel/AMD laptop audio DSP firmware (many recent laptops have no sound without it)
+sof-firmware
 
 ## Desktop (also pulled in by nullgrid-desktop)
 # main compositor: blur, glow, animations (Lua config)

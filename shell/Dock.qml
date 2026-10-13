@@ -45,7 +45,7 @@ PanelWindow {
                 label: modelData.label
                 active: Wm.activeApp === modelData.app
                 running: Running.apps.indexOf(modelData.app) >= 0
-                onClicked: Wm.exec(modelData.cmd)
+                onClicked: { Sfx.play("button_click"); Wm.exec(modelData.cmd) }
                 NgIcon { anchors.centerIn: parent; name: modelData.icon; size: 20; color: parent.active ? Theme.text : Theme.primary }
             }
         }

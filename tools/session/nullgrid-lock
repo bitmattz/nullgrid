@@ -1,0 +1,9 @@
+#!/bin/sh
+# nullgrid-lock: lock the screen (hyprlock), with the lock and unlock sounds.
+sfx() { command -v nullgrid-sfx >/dev/null && nullgrid-sfx play "$1"; }
+pgrep -xu "$(id -u)" hyprlock >/dev/null && exit 0  # already locked
+sfx lock
+hyprlock "$@"
+status=$?
+[ "$status" -eq 0 ] && sfx unlock
+exit "$status"

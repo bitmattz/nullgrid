@@ -16,6 +16,10 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local/state"))
+    monkeypatch.setenv("XDG_DATA_HOME", str(home / ".local/share"))
+    runtime = tmp_path / "run"
+    runtime.mkdir(mode=0o700)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     for var in ("NULLGRID_DATA_DIR", "HYPRLAND_INSTANCE_SIGNATURE", "WAYLAND_DISPLAY", "SWAYSOCK", "VISUAL", "EDITOR",
                 "XDG_CACHE_HOME"):
         monkeypatch.delenv(var, raising=False)

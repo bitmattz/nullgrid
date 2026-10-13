@@ -19,15 +19,20 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make repo` | builds every `pkg/*/PKGBUILD` into the local pacman repo `out/repo/` |
 | `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (smoother desktop; without it Mesa renders in software) |
-| `make test` | unit + snapshot tests of `nullgrid` and `nullgrid-dash`, in the builder container |
-| `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu and a live theme switch, and saves screenshots to `out/screens/shell-*.png` |
+| `make test` | unit + snapshot tests of `nullgrid`, `nullgrid-sfx` (incl. the generated sounds) and `nullgrid-dash`, in the builder container |
+| `make sounds` | synthesizes the sound packs into `out/sounds/` (`nullgrid sound test` in a checkout plays them); the `nullgrid-sfx` package does the same at build time |
+| `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu, a live theme switch, and the sound daemon (a stand-in `pw-play` logs which sounds the shell, Sway and `nullgrid sound mute` cause), and saves screenshots to `out/screens/shell-*.png` |
 | `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, that `nullgrid` can switch themes and passes `doctor`, and that the terminal apps load their generated configs. Then it checks the desktop on tty1:
-Hyprland (config valid, wallpaper up, a live theme switch, the keybind popup and launcher), Sway
-via the lite profile, and TTY mode (the dashboard). Screenshots of each go to `out/screens/` |
+Hyprland (config valid, wallpaper up, a live theme switch, the keybind popup and launcher,
+PipeWire and the sound daemon: the VM's sound card is recorded to a WAV file to prove a test
+sound comes out; the volume key), Sway via the lite profile, and TTY mode (the dashboard).
+Screenshots of each go to `out/screens/` |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 
 `run-vm.sh` honours `MEM` (default `4G`) and `CPUS` (default `2`), e.g. `MEM=2G make run`.
+The VM gets an Intel HDA sound card; with a GUI its output goes to the host's PulseAudio or
+PipeWire (`AUDIO=none make run` mutes it, `AUDIO=alsa` picks another QEMU audio backend).
 
 ## How the build works
 
@@ -49,9 +54,9 @@ The live user is `nullgrid` with passwordless sudo.
 From a checkout, the tool finds `themes/` and `config/templates/` in the repo by itself:
 
 ```sh
-python3 -m venv .venv && .venv/bin/pip install jinja2 tomlkit pytest
+python3 -m venv .venv && .venv/bin/pip install jinja2 tomlkit pytest numpy
 PYTHONPATH=tools/nullgrid .venv/bin/python -m nullgrid theme list
-.venv/bin/python -m pytest tests/nullgrid
+.venv/bin/python -m pytest tests/nullgrid tests/nullgrid_sfx   # nullgrid_sfx also needs PYTHONPATH=tools/nullgrid-sfx
 ```
 
 Set `HOME` (or `XDG_CONFIG_HOME` and `XDG_STATE_HOME`) to a scratch directory to keep it away

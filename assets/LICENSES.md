@@ -10,6 +10,7 @@ source and license. Original NULLGRID assets are MIT like the rest of the repo u
 | Shell icons (line drawings) | `shell/Icons.js` | original | MIT |
 | Lock screen layout | `config/skel/.config/hypr/hyprlock.conf` | original | MIT |
 | HUD wallpaper and decor | generated at runtime by `tools/nullgrid/nullgrid/wallpaper.py` | original, procedural | MIT |
+| Sound packs `neural-link`, `minimal-ops` | `/usr/share/nullgrid/sounds/` (synthesized at package build time by `assets/sounds/generate.py`; no samples) | original, procedural | MIT |
 | Rajdhani (UI font) | `/usr/share/fonts/nullgrid/` via `pkg/nullgrid-fonts` | Indian Type Foundry, [google/fonts](https://github.com/google/fonts/tree/main/ofl/rajdhani) | SIL OFL 1.1 |
 | Orbitron (display font) | `/usr/share/fonts/nullgrid/` via `pkg/nullgrid-fonts` | The League of Moveable Type, [google/fonts](https://github.com/google/fonts/tree/main/ofl/orbitron) | SIL OFL 1.1 (Reserved Font Name "Orbitron": shipped unmodified) |
 | JetBrains Mono (terminal font) | Arch package `ttf-jetbrains-mono` | JetBrains | SIL OFL 1.1 |

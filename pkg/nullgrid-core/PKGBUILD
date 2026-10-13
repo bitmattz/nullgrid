@@ -1,7 +1,7 @@
 # NULLGRID theme engine and the `nullgrid` CLI, plus the theme presets and app templates.
 # Sources come from the repo checkout: build/build-packages.sh drops nullgrid-src.tar here.
 pkgname=nullgrid-core
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc="NULLGRID theme engine and nullgrid command"
 arch=('any')

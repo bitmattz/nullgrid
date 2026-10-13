@@ -1,0 +1,17 @@
+#!/bin/sh
+# nullgrid-media volume up|down|mute | mic mute | brightness up|down
+# What the hardware keys run: change the level (PipeWire via wpctl, backlight via brightnessctl),
+# then a short tick from nullgrid-sfx.
+set -u
+step=5
+case "${1:-} ${2:-}" in
+    "volume up")       wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ "$step%+"; event=volume_change ;;
+    "volume down")     wpctl set-volume @DEFAULT_AUDIO_SINK@ "$step%-"; event=volume_change ;;
+    "volume mute")     wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; event=volume_change ;;
+    "mic mute")        wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; event=volume_change ;;
+    "brightness up")   brightnessctl -q -e4 -n2 set "$step%+"; event=brightness_change ;;
+    "brightness down") brightnessctl -q -e4 -n2 set "$step%-"; event=brightness_change ;;
+    *) echo "usage: nullgrid-media volume up|down|mute | mic mute | brightness up|down" >&2; exit 2 ;;
+esac
+command -v nullgrid-sfx >/dev/null && exec nullgrid-sfx play "$event"
+exit 0

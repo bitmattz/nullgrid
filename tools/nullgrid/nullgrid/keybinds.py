@@ -41,7 +41,7 @@ ACTIONS: dict[str, tuple[str, str | None]] = {
     "dashboard": ("system dashboard", "kitty --class nullgrid-dash nullgrid-dash"),
     "keys_help": ("show keybinds", "kitty --class nullgrid-keys nullgrid keys --pause"),
     "theme_next": ("next theme", "nullgrid theme next"),
-    "lock": ("lock screen", "hyprlock"),
+    "lock": ("lock screen", "nullgrid-lock"),
     "screenshot": ("screenshot (region)", "nullgrid-screenshot region"),
     "screenshot_screen": ("screenshot (screen)", "nullgrid-screenshot screen"),
     "close": ("close window", None),
@@ -55,8 +55,17 @@ ACTIONS: dict[str, tuple[str, str | None]] = {
     "move_right": ("move window right", None),
     "move_up": ("move window up", None),
     "move_down": ("move window down", None),
-    "exit": ("leave the desktop", None),
+    "exit": ("leave the desktop", "nullgrid-power logout"),
+    # hardware keys: they also work on the lock screen; volume and brightness repeat while held
+    "volume_up": ("volume up", "nullgrid-media volume up"),
+    "volume_down": ("volume down", "nullgrid-media volume down"),
+    "volume_mute": ("mute / unmute", "nullgrid-media volume mute"),
+    "mic_mute": ("microphone mute", "nullgrid-media mic mute"),
+    "brightness_up": ("brightness up", "nullgrid-media brightness up"),
+    "brightness_down": ("brightness down", "nullgrid-media brightness down"),
 }
+HARDWARE = ("volume_up", "volume_down", "volume_mute", "mic_mute", "brightness_up", "brightness_down")
+REPEATING = ("volume_up", "volume_down", "brightness_up", "brightness_down")
 PREFIX_ACTIONS = {
     "workspace": "go to workspace 1-10",
     "move_to_workspace": "move window to workspace 1-10",
@@ -98,6 +107,16 @@ class Bind:
     label: str
     command: str | None = None
     workspace: int | None = None
+
+    @property
+    def hardware(self) -> bool:
+        """Media/brightness keys: active on the lock screen too."""
+        return self.action in HARDWARE
+
+    @property
+    def repeats(self) -> bool:
+        """Held down, the action repeats (volume and brightness steps)."""
+        return self.action in REPEATING
 
     @property
     def mods(self) -> list[str]:
@@ -160,7 +179,9 @@ def binds(data: dict) -> list[Bind]:
     return out
 
 
-_PRETTY = {"Return": "ENTER", "grave": "`", "slash": "/", "space": "SPACE", "Escape": "ESC"}
+_PRETTY = {"Return": "ENTER", "grave": "`", "slash": "/", "space": "SPACE", "Escape": "ESC",
+           "XF86AudioRaiseVolume": "VOL+", "XF86AudioLowerVolume": "VOL-", "XF86AudioMute": "MUTE",
+           "XF86AudioMicMute": "MIC-MUTE", "XF86MonBrightnessUp": "BRIGHT+", "XF86MonBrightnessDown": "BRIGHT-"}
 
 
 def pretty(combo: str) -> str:

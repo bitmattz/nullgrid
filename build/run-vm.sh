@@ -9,10 +9,12 @@
 #     --gl      virtio-gpu with host OpenGL (virgl), needed for smooth Hyprland
 #     --vga=TYPE  another QEMU display adapter instead of virtio-gpu, to test other drivers:
 #               vmware (vmwgfx, like VirtualBox's VMSVGA), std (bochs), qxl
-# Env: MEM (default 4G), CPUS (default 2)
+#     --audio-wav=FILE  record the VM's sound card output to a WAV file (the boot test does)
+# Env: MEM (default 4G), CPUS (default 2), AUDIO (QEMU audio backend for the VM's sound card:
+#      default pa when the host has a PulseAudio/PipeWire socket, else none)
 set -euo pipefail
 
-uefi=1 serial=0 gl=0 iso="" monitor="" vga=""
+uefi=1 serial=0 gl=0 iso="" monitor="" vga="" wav=""
 for arg in "$@"; do
     case "$arg" in
         --bios) uefi=0 ;;
@@ -20,6 +22,7 @@ for arg in "$@"; do
         --gl) gl=1 ;;
         --vga=*) vga=${arg#--vga=} ;;
         --monitor=*) monitor=${arg#--monitor=} ;;
+        --audio-wav=*) wav=${arg#--audio-wav=} ;;
         -*) echo "unknown option: $arg" >&2; exit 2 ;;
         *) iso="$arg" ;;
     esac
@@ -37,10 +40,21 @@ command -v qemu-system-x86_64 >/dev/null || {
     exit 1
 }
 
+# Sound card: Intel HDA. Its output goes to the host's sound server, a WAV file, or nowhere.
+if [[ -n "$wav" ]]; then
+    audio="wav,id=snd0,path=$wav"
+elif [[ -n "${AUDIO:-}" ]]; then
+    audio="$AUDIO,id=snd0"
+elif (( ! serial )) && [[ -S "${XDG_RUNTIME_DIR:-/nonexistent}/pulse/native" ]]; then
+    audio="pa,id=snd0"
+else
+    audio="none,id=snd0"
+fi
+
 args=(-m "${MEM:-4G}" -smp "${CPUS:-2}" -machine q35
       -cdrom "$iso" -boot d
       -device virtio-net-pci,netdev=n0 -netdev user,id=n0
-      -audiodev none,id=snd0 -device intel-hda -device hda-output,audiodev=snd0)
+      -audiodev "$audio" -device intel-hda -device hda-output,audiodev=snd0)
 
 if [[ -w /dev/kvm ]]; then
     args+=(-enable-kvm -cpu host)
