@@ -324,8 +324,8 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
   `NgIcon` (+ `Icons.js` SVG paths), `NgText`, `LatticeLogo`. IpcHandler target `shell`.
 - `nullgrid-shell [menu|status|restart|log]`; autostarted by the Hyprland and Sway defaults.
   Keybind action `start_menu` (SUPER+SPACE). hyprlock HUD in skel `hypr/hyprlock.conf`;
-  wallpaper keeps `~/.cache/nullgrid/wallpaper/current.png`. Live user password is empty
-  (`nullgrid-live-password.service`) so Enter unlocks.
+  wallpaper keeps `~/.cache/nullgrid/wallpaper/current.png`. Live user password is `nullgrid`
+  (`nullgrid-live-password.service`), shown on the lock screen via `/etc/nullgrid/lock-hint`.
 - `make test-shell` (tests/shell_smoke.sh): headless Sway + shell in the builder; boot test checks
   the shell over IPC, menu, notifications, lock/unlock. All packages 0.5.0 (fonts/base unchanged).
 
