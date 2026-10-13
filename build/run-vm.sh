@@ -3,8 +3,9 @@
 #   run-vm.sh [--bios] [--serial] [--gl] [iso]
 #     --bios    legacy BIOS boot (default: UEFI via OVMF)
 #     --serial  headless; the serial console is attached to stdio
-#     --monitor=SOCK  with --serial: emulate a VGA screen and expose the QEMU monitor on a unix
-#               socket (the boot test takes screenshots of tty1 and types into it through it)
+#     --monitor=SOCK  with --serial: add a virtio-gpu screen (1600x900, no 3D, like `make run`)
+#               and expose the QEMU monitor on a unix socket. The boot test takes screenshots of
+#               tty1 and types into it through it.
 #     --gl      virtio-gpu with host OpenGL (virgl), needed for smooth Hyprland
 # Env: MEM (default 4G), CPUS (default 2)
 set -euo pipefail
@@ -60,7 +61,8 @@ if (( uefi )); then
 fi
 
 if (( serial )) && [[ -n "$monitor" ]]; then
-    args+=(-display none -vga std -serial stdio -monitor "unix:$monitor,server,nowait")
+    args+=(-display none -vga none -device virtio-vga,xres=1600,yres=900
+           -serial stdio -monitor "unix:$monitor,server,nowait")
 elif (( serial )); then
     args+=(-display none -vga none -serial stdio -monitor none)
 elif (( gl )); then

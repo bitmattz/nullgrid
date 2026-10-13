@@ -1,0 +1,66 @@
+#!/bin/sh
+# nullgrid-session [hyprland|sway]
+# Start the NULLGRID desktop on this virtual terminal. The tty1 login runs it in desktop mode.
+#
+# Without an argument: Sway when [performance] profile = "lite", Hyprland otherwise. If the
+# compositor fails right away (it couldn't start, e.g. on an unsupported GPU), the other one is
+# tried. Exit status: 0 the desktop ran and was left; 1 no compositor could start (the login
+# shell then falls back to TTY mode); anything else, the desktop crashed after running.
+# Compositor output: ~/.local/state/nullgrid/session-<name>.log
+set -u
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/nullgrid
+config=${XDG_CONFIG_HOME:-$HOME/.config}
+mkdir -p "$state"
+if [ -z "${NULLGRID_LITE:-}" ] && [ -r "$config/nullgrid/generated/shell-env.sh" ]; then
+    . "$config/nullgrid/generated/shell-env.sh"
+fi
+
+fail() { echo "nullgrid-session: $*" >&2; exit 1; }
+[ -n "${XDG_RUNTIME_DIR:-}" ] || fail "XDG_RUNTIME_DIR is not set (not logged in through logind?)"
+[ -z "${WAYLAND_DISPLAY:-}" ] || fail "already inside a Wayland session"
+ls /dev/dri/card* >/dev/null 2>&1 || fail "no display device (/dev/dri/card*)"
+
+# No render node: a display without a GPU driver (simpledrm/efifb). Sway then draws with its
+# pixman renderer; Hyprland goes through Mesa's llvmpipe. (A GPU with a driver but no 3D, like
+# QEMU's virtio-gpu without virgl, has a render node and Mesa falls back to llvmpipe by itself.)
+if ! ls /dev/dri/renderD* >/dev/null 2>&1; then
+    export NULLGRID_SOFTWARE_RENDER=1 WLR_RENDERER=pixman
+fi
+export XDG_SESSION_TYPE=wayland
+# The console login set these to the console variants of the apps; the desktop has the real thing.
+unset STARSHIP_CONFIG YAZI_CONFIG_HOME
+
+case ${1:-} in
+    hyprland|sway) order=$1 ;;
+    "") if [ "${NULLGRID_LITE:-0}" = 1 ]; then order="sway hyprland"; else order="hyprland sway"; fi ;;
+    *) echo "usage: nullgrid-session [hyprland|sway]" >&2; exit 2 ;;
+esac
+
+start() {
+    case $1 in
+        hyprland)
+            command -v start-hyprland >/dev/null || return 127
+            start-hyprland ;;
+        sway)
+            command -v sway >/dev/null || return 127
+            # NVIDIA's proprietary driver works with Sway but needs the flag.
+            unsupported=""
+            [ -d /sys/module/nvidia ] && unsupported=--unsupported-gpu
+            XDG_CURRENT_DESKTOP=sway XDG_SESSION_DESKTOP=sway sway $unsupported ;;
+    esac
+}
+
+for name in $order; do
+    log=$state/session-$name.log
+    began=$(date +%s)
+    start "$name" >"$log" 2>&1
+    status=$?
+    [ "$status" -eq 0 ] && exit 0
+    if [ $(( $(date +%s) - began )) -ge 15 ]; then
+        echo "nullgrid-session: $name stopped with status $status (log: $log)" >&2
+        [ "$status" -eq 1 ] && exit 3 || exit "$status"
+    fi
+    echo "nullgrid-session: $name could not start (status $status, log: $log)" >&2
+done
+exit 1

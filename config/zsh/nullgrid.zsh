@@ -17,6 +17,10 @@ if [[ $TERM == linux ]]; then
   export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship-tty.toml
   export YAZI_CONFIG_HOME=$XDG_CONFIG_HOME/yazi-tty
   alias cava="cava -p $XDG_CONFIG_HOME/cava/config-tty"
+else
+  # inherited from a console login: not for a real terminal
+  [[ $STARSHIP_CONFIG == */starship-tty.toml ]] && unset STARSHIP_CONFIG
+  [[ $YAZI_CONFIG_HOME == */yazi-tty ]] && unset YAZI_CONFIG_HOME
 fi
 
 # --- environment -------------------------------------------------------------
@@ -98,10 +102,15 @@ fi
 
 # --- session -------------------------------------------------------------------
 # Login on tty1 starts the configured mode (nullgrid mode desktop|tty).
+# Desktop mode: Hyprland (or Sway, see nullgrid-session); TTY mode or no desktop: the dashboard.
 _ng_session() {
-  if [[ $NULLGRID_MODE == desktop ]]; then
-    # The Hyprland session arrives in phase 4; until then desktop mode falls back to TTY mode.
-    print -P "%F{$NULLGRID_ANSI_WARNING}desktop mode is not available yet; starting TTY mode%f"
+  if [[ $NULLGRID_MODE == desktop ]] && (( $+commands[nullgrid-session] )); then
+    nullgrid-session
+    case $? in
+      0) print -P "%F{$NULLGRID_ANSI_DIM}left the desktop; run nullgrid-session to start it again%f"; return ;;
+      1) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop could not start (logs: ~/.local/state/nullgrid/session-*.log); starting TTY mode%f" ;;
+      *) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop stopped with an error (logs: ~/.local/state/nullgrid/session-*.log)%f"; return ;;
+    esac
   fi
   (( $+commands[nullgrid-dash] )) && nullgrid-dash
 }

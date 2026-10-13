@@ -46,6 +46,8 @@ nullgrid-dash
 nullgrid-fonts
 # zsh setup, default dotfiles, ASCII logo; depends on the apps below
 nullgrid-terminal
+# desktop session: Hyprland/Sway defaults, nullgrid-session, wallpaper tools
+nullgrid-desktop
 
 ## Terminal experience (also pulled in by nullgrid-terminal; listed so the ISO's contents are explicit)
 # main terminal emulator (GPU-rendered, live config reload)
@@ -76,3 +78,29 @@ git
 cava
 # terminal multiplexer with the HUD status bar
 tmux
+
+## Desktop (also pulled in by nullgrid-desktop)
+# main compositor: blur, glow, animations (Lua config)
+hyprland
+# fallback compositor (GPUs where Hyprland fails) and the [performance] lite session
+sway
+# draws the wallpaper on both compositors
+swaybg
+# rsvg-convert: renders the generated SVG wallpaper to PNG
+librsvg
+# keyboard app launcher
+fuzzel
+# notification daemon (D-Bus activated)
+mako
+# lock screen
+hyprlock
+# screenshots (nullgrid-screenshot): capture
+grim
+# screenshots: region selection
+slurp
+# clipboard (wl-copy/wl-paste); screenshots go to the clipboard too
+wl-clipboard
+# notify-send, for scripts that report to the notification daemon
+libnotify
+# OpenGL drivers, incl. llvmpipe for software rendering in VMs without 3D acceleration
+mesa

@@ -1,4 +1,7 @@
 import os
+import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -8,10 +11,11 @@ from nullgrid import config, render
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 UPDATE = os.environ.get("NULLGRID_UPDATE_SNAPSHOTS") == "1"
-ALL_TARGETS = {"kitty", "hyprland", "hyprlock", "quickshell", "mako", "fuzzel", "btop", "nvim", "gtk", "qt",
-               "tty", "shell-env", "starship", "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty",
-               "lazygit", "cava", "cava-tty", "banner"}
+ALL_TARGETS = {"kitty", "hyprland", "hyprland-keys", "sway", "sway-keys", "wallpaper", "hyprlock",
+               "quickshell", "mako", "fuzzel", "btop", "nvim", "gtk", "qt", "tty", "shell-env", "starship",
+               "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty", "lazygit", "cava", "cava-tty", "banner"}
 N = len(ALL_TARGETS)
+SHARED_RELOADS = 2  # hyprland + hyprland-keys, sway + sway-keys: one reload each
 
 
 def rendered(paths, config_text=""):
@@ -46,16 +50,24 @@ def test_quickshell_json_is_valid(paths):
     assert data["durations"] == {"fast": 120, "normal": 180, "slow": 220}
 
 
+def _lua_flag(lua: str, table: str) -> str:
+    return re.search(table + r" = \{\s*enabled = (\w+)", lua).group(1)
+
+
 def test_lite_profile_and_reduce_motion(paths):
     _, out = rendered(paths, '[performance]\nprofile = "lite"\n')
-    assert "enabled = false" in out["hyprland"].split("blur {")[1].split("}")[0]
-    assert "animation =" not in out["hyprland"]
+    assert _lua_flag(out["hyprland"], "blur") == "false"
+    assert _lua_flag(out["hyprland"], "glow") == "false"
+    assert "hl.animation(" not in out["hyprland"]
     assert '"refresh_ms": 3000' in out["quickshell"]
 
     _, out = rendered(paths, '[behavior]\nreduce_motion = true\n')
-    assert "animation =" not in out["hyprland"]
+    assert "hl.animation(" not in out["hyprland"]
     assert '"fast": 0' in out["quickshell"]
-    assert "enabled = true" in out["hyprland"].split("blur {")[1].split("}")[0]
+    assert _lua_flag(out["hyprland"], "blur") == "true"
+
+    _, out = rendered(paths, "[behavior]\n")  # defaults: 180 ms -> 1.8 ds
+    assert 'leaf = "windowsIn", enabled = true, speed = 1.8,' in out["hyprland"]
 
 
 def test_animation_speed_scales_durations(paths):
@@ -164,7 +176,7 @@ def test_reload_only_changed(paths, monkeypatch):
     render.apply(s, paths)
     calls.clear()
     assert render.apply(s, paths).reloaded == []
-    assert len(render.apply(s, paths, reload="all").reloaded) == N
+    assert len(render.apply(s, paths, reload="all").reloaded) == N - SHARED_RELOADS
 
 
 def test_generated_toml_and_json_parse(paths):
@@ -175,6 +187,22 @@ def test_generated_toml_and_json_parse(paths):
         tomllib.loads(out[name])
     json.loads("\n".join(l for l in out["fastfetch"].splitlines() if not l.startswith("//")))
     json.loads(out["quickshell"])
+    json.loads(out["wallpaper"])
+
+
+@pytest.mark.skipif(shutil.which("luac") is None, reason="needs luac (package lua)")
+@pytest.mark.parametrize("preset", ["crimson-hud", "toxic-grid"])
+def test_generated_lua_compiles(paths, tmp_path, preset):
+    """Hyprland's config is Lua: a syntax error would leave the desktop unconfigured."""
+    _, out = rendered(paths, f'[theme]\npreset = "{preset}"\n')
+    for name in ("hyprland", "hyprland-keys", "nvim"):
+        f = tmp_path / f"{name}.lua"
+        f.write_text(out[name])
+        result = subprocess.run(["luac", "-p", str(f)], capture_output=True, text=True)
+        assert result.returncode == 0, f"{name}: {result.stderr}"
+    for f in (REPO / "config/hypr/nullgrid.lua", REPO / "config/skel/.config/hypr/hyprland.lua"):
+        result = subprocess.run(["luac", "-p", str(f)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
 
 
 def test_tty_variants_use_only_console_glyphs(paths):

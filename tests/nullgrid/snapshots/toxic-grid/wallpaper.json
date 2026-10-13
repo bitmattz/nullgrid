@@ -1,0 +1,71 @@
+{
+  "colors": {
+    "bg": "#050605",
+    "bg_alt": "#0c110a",
+    "dim": "#6f7d66",
+    "glow": "#9dff00",
+    "primary": "#b6ff3b",
+    "secondary": "#f4e409",
+    "surface": "#10160d",
+    "text": "#eaf5e0",
+    "warning": "#ff9f1c"
+  },
+  "decor": {
+    "circuit_lines": true,
+    "data_text": true,
+    "matrix_rain": true,
+    "scanlines": false
+  },
+  "fonts": {
+    "display": "Orbitron",
+    "mono": "JetBrains Mono",
+    "ui": "Rajdhani"
+  },
+  "glow": 0.8,
+  "keymap": [
+    [
+      "SUPER+ENTER",
+      "terminal"
+    ],
+    [
+      "SUPER+D",
+      "app launcher"
+    ],
+    [
+      "SUPER+E",
+      "file manager"
+    ],
+    [
+      "SUPER+`",
+      "system dashboard"
+    ],
+    [
+      "SUPER+/",
+      "show keybinds"
+    ],
+    [
+      "SUPER+T",
+      "next theme"
+    ],
+    [
+      "SUPER+Q",
+      "close window"
+    ],
+    [
+      "SUPER+1..0",
+      "go to workspace 1-10"
+    ],
+    [
+      "SUPER+CTRL+L",
+      "lock screen"
+    ],
+    [
+      "SUPER+SHIFT+E",
+      "leave the desktop"
+    ]
+  ],
+  "seed": 7,
+  "surface_opacity": 0.85,
+  "theme": "toxic-grid",
+  "version": "0.4.0"
+}

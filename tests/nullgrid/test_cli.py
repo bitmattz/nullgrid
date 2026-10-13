@@ -91,6 +91,18 @@ def test_doctor(run, paths):
     assert code == 1 and "no theme named 'gone'" in out
 
 
+def test_doctor_checks_the_compositor_configs(run, paths, monkeypatch):
+    from nullgrid import doctor
+    monkeypatch.setattr(doctor.shutil, "which", lambda name: f"/usr/bin/{name}" if name != "swaybg" else None)
+    run("init", "-q")
+    code, out, _ = run("doctor")
+    assert "hyprland.lua" not in out and "swaybg not found (package swaybg): no wallpaper" in out
+    (paths.config_home / "hypr" / "hyprland.lua").write_text('hl.config({})\n')
+    code, out, _ = run("doctor")
+    assert code == 0
+    assert "doesn't load nullgrid-theme.lua or nullgrid-keys.lua: theme and keybind changes won't reach Hyprland" in out
+
+
 def test_doctor_flags_low_contrast(run, paths):
     write_config(paths, '[theme.colors]\ntext = "#222222"\n')
     code, out, _ = run("doctor")
@@ -140,3 +152,49 @@ def test_skel_files_follow_xdg_config_home(run, paths, monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "elsewhere"))
     assert run("init", "-q")[0] == 0
     assert (tmp_path / "elsewhere" / "kitty" / "kitty.conf").is_file()
+
+
+def test_init_sets_up_the_desktop_configs(run, paths):
+    assert run("init", "-q")[0] == 0
+    hypr = paths.config_home / "hypr"
+    assert 'load(config .. "nullgrid-theme.lua")' in (hypr / "hyprland.lua").read_text()
+    assert (hypr / "nullgrid-theme.lua").is_file() and (hypr / "nullgrid-keys.lua").is_file()
+    assert "include ~/.config/sway/nullgrid-keys" in (paths.config_home / "sway" / "config").read_text()
+    assert (paths.config_home / "sway" / "nullgrid-theme").is_file()
+
+
+def test_theme_next_and_prev_cycle(run, paths):
+    code, out, _ = run("theme", "next")
+    assert code == 0 and out.startswith("theme: ice-protocol")
+    assert run("theme", "next")[1].startswith("theme: toxic-grid")
+    assert run("theme", "next")[1].startswith("theme: crimson-hud")   # wraps around
+    assert run("theme", "prev")[1].startswith("theme: toxic-grid")
+
+
+def test_keys_lists_the_active_set(run):
+    code, out, _ = run("keys")
+    assert code == 0
+    assert "keybinds: default" in out
+    assert "SUPER+ENTER" in out and "terminal" in out
+    assert "SUPER+SHIFT+1..0" in out and "move window to workspace 1-10" in out
+
+
+def test_wallpaper_render(run, paths, tmp_path):
+    code, out, _ = run("wallpaper", "render", "--size", "1024x768")
+    assert code == 0 and out.startswith('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768"')
+    assert (paths.config_dir / "generated" / "wallpaper.json").is_file()  # generated on demand
+    dest = tmp_path / "wp.svg"
+    assert run("wallpaper", "render", "-o", str(dest))[0] == 0
+    assert 'width="1920"' in dest.read_text()
+
+
+def test_wallpaper_render_bad_size(run, capsys):
+    import pytest
+    with pytest.raises(SystemExit):
+        run("wallpaper", "render", "--size", "huge")
+    assert "expected a size like 1920x1080" in capsys.readouterr().err
+
+
+def test_wallpaper_apply_outside_wayland(run):
+    code, _, err = run("wallpaper", "apply")
+    assert code == 1 and "WAYLAND_DISPLAY" in err

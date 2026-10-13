@@ -1,0 +1,15 @@
+#!/bin/sh
+# nullgrid-screenshot region|screen
+# Save a screenshot to ~/Pictures/Screenshots, copy it to the clipboard, and say so.
+set -eu
+dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
+mkdir -p "$dir"
+file=$dir/$(date +%Y-%m-%d_%H-%M-%S).png
+case ${1:-region} in
+    region) geometry=$(slurp -d) || exit 0  # Escape cancels
+            grim -g "$geometry" "$file" ;;
+    screen) grim "$file" ;;
+    *) echo "usage: nullgrid-screenshot region|screen" >&2; exit 2 ;;
+esac
+wl-copy --type image/png < "$file" 2>/dev/null || true
+notify-send --app-name=nullgrid --icon="$file" "Screenshot saved" "$file" 2>/dev/null || true

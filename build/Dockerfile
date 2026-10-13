@@ -6,8 +6,8 @@ FROM archlinux:latest
 RUN pacman -Syu --noconfirm --needed \
         archiso base-devel git sudo pacman-contrib \
         python python-jinja python-tomlkit python-pytest python-textual python-psutil \
-        python-build python-installer python-flit-core \
-        qemu-base edk2-ovmf \
+        python-build python-installer python-flit-core lua \
+        qemu-base qemu-hw-display-virtio-vga qemu-hw-display-virtio-gpu edk2-ovmf \
     && pacman -Scc --noconfirm
 
 # makepkg refuses to run as root, so packages are built as this user.

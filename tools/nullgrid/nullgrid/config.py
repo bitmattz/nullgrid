@@ -16,6 +16,7 @@ from typing import Any
 
 import tomlkit
 
+from . import keybinds as kbmod
 from .paths import Paths
 from .schema import Bool, ColorField, Enum, Float, Int, Str, Table, Time
 
@@ -129,7 +130,8 @@ BEHAVIOR = Table({
     "animation_speed": Float(0.25, 4, default=1.0, doc="multiplier; 2 = twice as fast"),
     "reduce_motion": Bool(default=False),
     "default_mode": Enum("desktop", "tty", default="desktop"),
-    "keybinds": Str(default="default", doc="keybind set name or path to a file"),
+    "keybinds": Str(NAME, hint="a keybind set name like 'default'", default="default",
+                    doc="keybinds/<name>.toml, in ~/.config/nullgrid/keybinds/ or the system dir"),
     "greeting": Enum("fastfetch", "none", default="fastfetch", doc="shown when a terminal opens"),
 })
 
@@ -173,6 +175,7 @@ class Settings:
     theme: dict           # validated preset with the user's overrides applied
     preset_path: Path
     config_path: Path | None  # None: no user config yet, defaults in use
+    keybinds: dict            # validated keybind set (see keybinds.py)
 
 
 def read_toml(path: Path) -> dict:
@@ -234,7 +237,19 @@ def load(paths: Paths, config_path: Path | None = None) -> Settings:
         known = ", ".join(list_themes(paths)) or "none found"
         raise ConfigError(source or "defaults", [f"theme.preset: no theme named {name!r} (available: {known})"])
     theme = apply_overrides(load_theme(preset), cfg["theme"])
-    return Settings(config=cfg, theme=theme, preset_path=preset, config_path=source)
+    return Settings(config=cfg, theme=theme, preset_path=preset, config_path=source,
+                    keybinds=load_keybinds(paths, cfg["behavior"]["keybinds"], source))
+
+
+def load_keybinds(paths: Paths, name: str, source: Path | str | None = None) -> dict:
+    path = kbmod.find(paths, name)
+    if path is None:
+        known = ", ".join(kbmod.available(paths)) or "none found"
+        raise ConfigError(source or "defaults", [f"behavior.keybinds: no keybind set named {name!r} (available: {known})"])
+    data, errors = kbmod.validate(read_toml(path), path)
+    if errors:
+        raise ConfigError(path, errors)
+    return data
 
 
 def apply_overrides(theme: dict, user_theme: dict) -> dict:

@@ -1,3 +1,3 @@
   LIVE SESSION   network: nmtui   admin: sudo works without a password
-  CUSTOMIZE      nullgrid theme list | set <name> | edit     nullgrid doctor
-
+  DESKTOP        nullgrid-session   SUPER+ENTER terminal   SUPER+/ all keybinds
+  CUSTOMIZE      nullgrid theme list | set <name> | edit     nullgrid mode tty|desktop

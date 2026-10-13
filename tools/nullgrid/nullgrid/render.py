@@ -37,6 +37,7 @@ from typing import Any
 import jinja2
 
 from . import __version__
+from . import keybinds as kbmod
 from .color import Color
 from .config import Settings, atomic_write, read_toml
 from .paths import Paths
@@ -148,6 +149,9 @@ def context(settings: Settings) -> dict[str, Any]:
         },
         "ansi": ansi,
         "ansi_roles": {r: ansi(theme["colors"][r]) for r in roles},
+        "keybinds": settings.keybinds,
+        "binds": kbmod.binds(settings.keybinds),
+        "keymap": kbmod.essentials(settings.keybinds),
         "version": __version__,
     }
 
@@ -194,6 +198,26 @@ def sgr(index: int | None = None, bold: bool = False) -> str:
     return f"\033[{'1;' if bold else ''}{code}m"
 
 
+def lua_string(value: str) -> str:
+    """A Lua string literal."""
+    out = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+    return f'"{out}"'
+
+
+_SWAY_MODS = {"SUPER": "Mod4", "SHIFT": "Shift", "CTRL": "Control", "ALT": "Mod1"}
+
+
+def hypr_combo(combo: str) -> str:
+    """'SUPER+SHIFT+Return' -> 'SUPER + SHIFT + Return' (Hyprland's Lua bind syntax)."""
+    return " + ".join(combo.split("+"))
+
+
+def sway_combo(combo: str) -> str:
+    """'SUPER+SHIFT+Q' -> 'Mod4+Shift+q'. Sway matches keysyms by case and "Q" is shift+q."""
+    *mods, key = combo.split("+")
+    return "+".join([*(_SWAY_MODS[m] for m in mods), key.lower() if len(key) == 1 else key])
+
+
 def environment(paths: Paths) -> jinja2.Environment:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader([str(p) for p in paths.templates]),
@@ -205,6 +229,9 @@ def environment(paths: Paths) -> jinja2.Environment:
     )
     env.filters["json"] = lambda v, indent=2: json.dumps(_plain(v), indent=indent, sort_keys=True)
     env.filters["tf"] = lambda v: "true" if v else "false"
+    env.filters["lua"] = lua_string
+    env.filters["hypr_combo"] = hypr_combo
+    env.filters["sway_combo"] = sway_combo
     env.globals["Color"] = Color
     env.globals["ansi_name"] = ansi_name
     env.globals["sgr"] = sgr
@@ -285,7 +312,12 @@ def apply(settings: Settings, paths: Paths, *, reload: str = "changed", dry_run:
     atomic_write(paths.state_file, json.dumps(state, indent=1, sort_keys=True) + "\n")
 
     to_reload = {"all": targets, "changed": report.written, "none": []}[reload]
+    done: set[tuple] = set()  # e.g. the Hyprland theme and keys files share one `hyprctl reload`
     for t in to_reload:
+        hook = (t.process, t.signal, tuple(t.reload))
+        if t.reload and hook in done:
+            continue
+        done.add(hook)
         ok = run_reload(t)
         if ok is True:
             report.reloaded.append(t.name)
@@ -346,6 +378,7 @@ def run_reload(t: Target) -> bool | None:
         return None
     out = None if t.terminal else subprocess.DEVNULL
     try:
-        return subprocess.run(argv, stdout=out, stderr=out, timeout=10).returncode == 0
+        # generous: the wallpaper hook renders an image per screen
+        return subprocess.run(argv, stdout=out, stderr=out, timeout=30).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False

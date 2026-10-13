@@ -1,0 +1,40 @@
+# NULLGRID default keybinds, for Hyprland and the Sway fallback alike.
+#
+# To change them, copy this file to ~/.config/nullgrid/keybinds/<name>.toml, set meta.name to
+# <name>, edit, and select it in nullgrid.toml with:  [behavior] keybinds = "<name>"
+# Combos: modifiers SUPER SHIFT CTRL ALT plus one xkb key name (Return, Left, slash, F1, ...).
+# An action can take a list of combos. `nullgrid keys` prints the active set.
+
+[meta]
+name = "default"
+description = "SUPER-based, arrows or hjkl to move around"
+
+[keys]
+terminal = "SUPER+Return"
+launcher = "SUPER+D"
+files = "SUPER+E"
+dashboard = "SUPER+grave"
+keys_help = "SUPER+slash"
+theme_next = "SUPER+T"
+lock = "SUPER+CTRL+L"
+screenshot = "Print"
+screenshot_screen = "SHIFT+Print"
+
+close = "SUPER+Q"
+fullscreen = "SUPER+F"
+float = "SUPER+V"
+focus_left = ["SUPER+Left", "SUPER+H"]
+focus_right = ["SUPER+Right", "SUPER+L"]
+focus_up = ["SUPER+Up", "SUPER+K"]
+focus_down = ["SUPER+Down", "SUPER+J"]
+move_left = ["SUPER+SHIFT+Left", "SUPER+SHIFT+H"]
+move_right = ["SUPER+SHIFT+Right", "SUPER+SHIFT+L"]
+move_up = ["SUPER+SHIFT+Up", "SUPER+SHIFT+K"]
+move_down = ["SUPER+SHIFT+Down", "SUPER+SHIFT+J"]
+workspace = "SUPER"
+move_to_workspace = "SUPER+SHIFT"
+exit = "SUPER+SHIFT+E"
+
+# Extra binds: combo = command
+[exec]
+"SUPER+B" = "kitty --class nullgrid-btop btop"

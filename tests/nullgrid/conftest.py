@@ -16,7 +16,8 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local/state"))
-    for var in ("NULLGRID_DATA_DIR", "HYPRLAND_INSTANCE_SIGNATURE", "WAYLAND_DISPLAY", "VISUAL", "EDITOR"):
+    for var in ("NULLGRID_DATA_DIR", "HYPRLAND_INSTANCE_SIGNATURE", "WAYLAND_DISPLAY", "SWAYSOCK", "VISUAL", "EDITOR",
+                "XDG_CACHE_HOME"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("TERM", "dumb")
     # Never signal real apps (e.g. the developer's own kitty) from a test.

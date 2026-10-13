@@ -1,0 +1,41 @@
+# NULLGRID desktop session: Hyprland (Sway as fallback and for the lite profile), their NULLGRID
+# defaults, the session launcher, and the wallpaper tooling. The look and the keybinds are
+# generated per user by nullgrid-core from nullgrid.toml.
+pkgname=nullgrid-desktop
+pkgver=0.4.0
+pkgrel=1
+pkgdesc="NULLGRID desktop session: Hyprland with a Sway fallback, HUD wallpaper"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=(
+  'nullgrid-core' 'nullgrid-terminal'
+  'hyprland' 'sway'                    # compositors
+  'swaybg' 'librsvg'                   # wallpaper: shown by swaybg, SVG rendered by rsvg-convert
+  'fuzzel' 'mako' 'hyprlock'           # launcher, notifications, lock screen (themed by nullgrid-core)
+  'grim' 'slurp' 'wl-clipboard' 'libnotify'   # nullgrid-screenshot
+)
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+check() {
+  sh -n tools/session/nullgrid-session
+  sh -n tools/session/nullgrid-screenshot
+}
+
+package() {
+  install -Dm755 -t "$pkgdir/usr/bin" tools/session/nullgrid-session tools/session/nullgrid-screenshot
+  install -Dm644 config/hypr/nullgrid.lua "$pkgdir/usr/share/nullgrid/hypr/nullgrid.lua"
+  install -Dm644 config/sway/nullgrid.conf "$pkgdir/usr/share/nullgrid/sway/nullgrid.conf"
+  install -Dm644 -t "$pkgdir/usr/share/nullgrid/logo" assets/logo/nullgrid.svg assets/logo/nullgrid-small.svg
+  # the os-release LOGO=nullgrid icon
+  install -Dm644 assets/logo/nullgrid.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/nullgrid.svg"
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/wayland-sessions/nullgrid.desktop" <<DESKTOP
+[Desktop Entry]
+Name=NULLGRID
+Comment=NULLGRID desktop (Hyprland, Sway as fallback)
+Exec=nullgrid-session
+Type=Application
+DesktopNames=Hyprland
+DESKTOP
+}

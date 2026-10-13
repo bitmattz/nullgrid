@@ -12,3 +12,7 @@ only the palette changes between presets.
   here: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ █ ░ ▒ ■ ▲ ▼ ► ◄ ◆ · • › » ↑ ↓`. It has no half blocks,
   double lines or powerline/Nerd glyphs. Anything shown on a TTY uses only these, and only
   palette slots (0-15) as colors. Tests enforce both.
+- **Screen layout:** the left edge belongs to the dock, the bottom to the status bar, and the
+  bottom right to the HUD widgets. Wallpaper decor that carries text (logo plate, data blocks,
+  keymap) stays out of those areas: the logo plate goes top right, data top left and bottom left.
+  Circuit traces may run anywhere along the edges.

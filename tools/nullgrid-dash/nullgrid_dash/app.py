@@ -451,22 +451,10 @@ class Dashboard(App):
 
     def action_next_theme(self) -> None:
         try:
-            out = subprocess.run(["nullgrid", "theme", "list"], capture_output=True, text=True,
-                                 timeout=20, env={**os.environ, "NO_COLOR": "1"}).stdout
+            subprocess.run(["nullgrid", "theme", "next"], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=60)
         except (OSError, subprocess.TimeoutExpired):
             return
-        names, current = [], None
-        for line in out.splitlines():
-            if not line.strip():
-                continue
-            active, name = line.startswith("*"), line[1:].split()[0]
-            names.append(name)
-            current = name if active else current
-        if not names:
-            return
-        nxt = names[(names.index(current) + 1) % len(names)] if current in names else names[0]
-        subprocess.run(["nullgrid", "theme", "set", nxt], stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL, timeout=60)
         self._clock()
 
     def action_power(self) -> None:

@@ -8,7 +8,7 @@ set -euo pipefail
 
 src=/src
 repo="$src/out/repo"
-order=(nullgrid-base nullgrid-fonts nullgrid-core nullgrid-dash nullgrid-terminal)
+order=(nullgrid-base nullgrid-fonts nullgrid-core nullgrid-dash nullgrid-terminal nullgrid-desktop)
 
 mkdir -p "$repo"
 rm -f "$repo"/*.pkg.tar.* "$repo"/nullgrid.*

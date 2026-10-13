@@ -1,0 +1,27 @@
+{{ header("--") }}
+-- Keybind set "{{ keybinds.meta.name }}" (behavior.keybinds in nullgrid.toml). `nullgrid keys` lists it.
+{% set dsp = {
+    "close": "hl.dsp.window.close()",
+    "fullscreen": "hl.dsp.window.fullscreen()",
+    "float": 'hl.dsp.window.float({ action = "toggle" })',
+    "exit": "hl.dsp.exit()",
+} %}
+{% for b in binds %}
+{% if b.command %}
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.exec_cmd({{ b.command | lua }}))
+{% elif b.action == "workspace" %}
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.focus({ workspace = {{ b.workspace }} }))
+{% elif b.action == "move_to_workspace" %}
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.window.move({ workspace = {{ b.workspace }} }))
+{% elif b.action.startswith("focus_") %}
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.focus({ direction = "{{ b.action[6:] }}" }))
+{% elif b.action.startswith("move_") %}
+hl.bind("{{ b.combo | hypr_combo }}", hl.dsp.window.move({ direction = "{{ b.action[5:] }}" }))
+{% else %}
+hl.bind("{{ b.combo | hypr_combo }}", {{ dsp[b.action] }})
+{% endif %}
+{% endfor %}
+
+-- SUPER + left/right mouse button: move/resize windows
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })

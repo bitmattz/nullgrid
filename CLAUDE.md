@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-13: Phase 3 DONE, next is Phase 4
+### Status as of 2026-10-13: Phase 4 DONE, next is Phase 5
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -281,10 +281,39 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - cava segfaults without an audio server (even with an empty config); verify it once PipeWire is in (phase 6).
 - To see the console, read the PNGs `make test-boot` writes to `out/screens/`.
 
-**Next step, Phase 4 (compositor + window styling):** Hyprland session started from tty1 when
-`behavior.default_mode = "desktop"` (replace the fallback in `_ng_session` in `config/zsh/nullgrid.zsh`),
-`hyprland.conf` sourcing the generated `nullgrid-theme.conf`, keybinds, Sway fallback config,
-`[performance] lite` choosing Sway, wallpaper + decorative layer as SVG/generated (circuit traces,
-logo plate with concept B "dead pixel lattice" drawn as SVG from the same geometry as
-`assets/logo/generate_ascii.py`, matrix columns, barcode, data text), and a desktop screenshot in
-`make test-boot` (virtio-gpu; check software rendering works in QEMU without virgl).
+**Phase 4 delivered:**
+- Hyprland 0.56 = **Lua config**. Skel `~/.config/hypr/hyprland.lua` dofile()s
+  `/usr/share/nullgrid/hypr/nullgrid.lua` (defaults, rules, autostart) + generated
+  `nullgrid-theme.lua` (look, returns palette) + `nullgrid-keys.lua`. Sway fallback: skel
+  `~/.config/sway/config` includes `/usr/share/nullgrid/sway/nullgrid.conf` + generated `nullgrid-theme`/`nullgrid-keys`.
+- Keybind sets: `config/keybinds/default.toml` (`keybinds.py`, `behavior.keybinds`), one file ->
+  Hyprland + Sway binds + `nullgrid keys` + wallpaper keymap.
+- `nullgrid-session` (tools/session/): Hyprland via `start-hyprland`, Sway for `lite`, falls back
+  to the other on quick failure; exit 1 -> zsh starts the TTY dashboard. `nullgrid-screenshot`.
+- Wallpaper: `nullgrid/wallpaper.py` (procedural SVG, all decor layers) + `nullgrid/logo.py`
+  (lattice geometry -> ASCII/SVG; `assets/logo/generate.py`). Target `wallpaper` writes
+  `generated/wallpaper.json`; `nullgrid wallpaper apply` renders PNG per screen (rsvg-convert,
+  cached in ~/.cache/nullgrid) and runs swaybg. CLI also: `theme next|prev`, `keys [--pause]`, `wallpaper render`.
+- Package `nullgrid-desktop`; all nullgrid packages 0.4.0. 26 manifest targets. `make test` = 115.
+- `make test-boot`: virtio-gpu 1600x900 screen; checks Hyprland (verify-config, configerrors,
+  wallpaper, live theme switch, keys popup, launcher, exit bind), Sway (lite), then TTY mode.
+  Screenshots `out/screens/desktop-*.png`. Docs: `docs/DESKTOP.md`, phase-4 section in DECISIONS.
+
+**Gotchas learned (phase 4):**
+- `Hyprland --verify-config -c FILE` (as non-root) is a strict checker; use it. `sway -C` needs
+  `WLR_BACKENDS=headless WLR_RENDERER=pixman` in a container, and a copy of the binary without
+  file caps (`cp /usr/bin/sway /tmp/sway`); it doesn't validate bindsym commands.
+- zsh `print -P` + starship's `prompt_subst` executes backticks/`$(...)` in messages.
+- The builder needs `qemu-hw-display-virtio-vga`/`-virtio-gpu` for the boot test screen.
+- virtio-gpu without virgl still has `/dev/dri/renderD128`; Mesa falls back to llvmpipe itself.
+- `kitty --hold` drops into a shell (which runs the fastfetch greeting); use `nullgrid keys --pause`.
+- Fast VM debugging: a scratch harness that boots the ISO with serial + monitor and takes
+  commands from files (see phase-4 session) beats re-running the whole boot test.
+
+**Next step, Phase 5 (shell UI, Quickshell):** dock (left), status bar (bottom), HUD widgets
+(bottom right: RAM gauge, net graph, CPU bars, workspace strip, activity grid), start menu,
+notifications (mako or Quickshell), hyprlock HUD, the animated matrix overlay (respect
+`reduce_motion`). Quickshell reads `~/.config/nullgrid/generated/theme.json` (already generated).
+Autostart it from `/usr/share/nullgrid/hypr/nullgrid.lua` and the Sway defaults. Check that
+Quickshell is in Arch's repos (else package it in `pkg/`). Keep the wallpaper's text blocks
+clear of the widget areas (docs/STYLE.md).

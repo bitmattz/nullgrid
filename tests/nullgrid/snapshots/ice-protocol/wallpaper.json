@@ -1,0 +1,71 @@
+{
+  "colors": {
+    "bg": "#070a0f",
+    "bg_alt": "#0d1420",
+    "dim": "#6b7d90",
+    "glow": "#6fb6ff",
+    "primary": "#8fd8ff",
+    "secondary": "#3d7bff",
+    "surface": "#0f1824",
+    "text": "#eef6ff",
+    "warning": "#ffc857"
+  },
+  "decor": {
+    "circuit_lines": true,
+    "data_text": true,
+    "matrix_rain": true,
+    "scanlines": false
+  },
+  "fonts": {
+    "display": "Orbitron",
+    "mono": "JetBrains Mono",
+    "ui": "Rajdhani"
+  },
+  "glow": 0.4,
+  "keymap": [
+    [
+      "SUPER+ENTER",
+      "terminal"
+    ],
+    [
+      "SUPER+D",
+      "app launcher"
+    ],
+    [
+      "SUPER+E",
+      "file manager"
+    ],
+    [
+      "SUPER+`",
+      "system dashboard"
+    ],
+    [
+      "SUPER+/",
+      "show keybinds"
+    ],
+    [
+      "SUPER+T",
+      "next theme"
+    ],
+    [
+      "SUPER+Q",
+      "close window"
+    ],
+    [
+      "SUPER+1..0",
+      "go to workspace 1-10"
+    ],
+    [
+      "SUPER+CTRL+L",
+      "lock screen"
+    ],
+    [
+      "SUPER+SHIFT+E",
+      "leave the desktop"
+    ]
+  ],
+  "seed": 7,
+  "surface_opacity": 0.85,
+  "theme": "ice-protocol",
+  "version": "0.4.0"
+}

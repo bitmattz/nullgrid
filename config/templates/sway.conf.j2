@@ -1,0 +1,17 @@
+{{ header("#") }}
+# The look of windows in the Sway session. Included by ~/.config/sway/config.
+# Sway has no blur, glow or gradients: a solid neon border marks the active window.
+
+default_border pixel {{ style.border_width }}
+default_floating_border pixel {{ style.border_width }}
+gaps inner {{ (style.gaps / 2) | round | int }}
+gaps outer {{ (style.gaps / 2) | round | int }}
+font pango:{{ fonts.ui }} {{ fonts.size }}
+titlebar_border_thickness {{ [style.border_width, 1] | min }}
+
+# class                 border          background         text          indicator          child_border
+client.focused          {{ c.glow.hex }} {{ c.surface.hex }} {{ c.text.hex }} {{ c.primary.hex }} {{ c.glow.hex }}
+client.focused_inactive {{ c.dim.hex }} {{ c.surface.hex }} {{ c.dim.hex }} {{ c.dim.hex }} {{ c.dim.mix(c.bg, 0.5).hex }}
+client.unfocused        {{ c.dim.mix(c.bg, 0.5).hex }} {{ c.bg.hex }} {{ c.dim.hex }} {{ c.dim.mix(c.bg, 0.5).hex }} {{ c.dim.mix(c.bg, 0.5).hex }}
+client.urgent           {{ c.warning.hex }} {{ c.surface.hex }} {{ c.text.hex }} {{ c.warning.hex }} {{ c.warning.hex }}
+client.background       {{ c.bg.hex }}

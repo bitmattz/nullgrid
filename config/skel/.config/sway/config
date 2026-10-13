@@ -1,0 +1,17 @@
+# Sway config of the NULLGRID desktop (fallback and lite session). This file is yours: add your
+# settings at the end.
+#
+# Included, in order: the NULLGRID defaults, then the look and the keybinds that nullgrid
+# generates from ~/.config/nullgrid/nullgrid.toml (don't edit those, they're rewritten).
+# Docs: docs/DESKTOP.md. Sway's options: man 5 sway
+
+include /usr/share/nullgrid/sway/nullgrid.conf
+include ~/.config/sway/nullgrid-theme
+include ~/.config/sway/nullgrid-keys
+
+# Terminal-first: open one at login (floating; the app_id picks the window rule).
+exec kitty --class nullgrid-welcome
+
+# Your settings below. Examples:
+# input type:keyboard xkb_layout de
+# bindsym Mod4+w exec firefox

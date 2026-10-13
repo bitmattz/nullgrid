@@ -1,9 +1,12 @@
 # Logo concepts
 
-> **Chosen (2026-10-13): B, "Dead pixel lattice".** Phase 4 draws it as SVG from a generator
-> script. Because B is weaker at 16 px, small sizes (tray, favicon, cursor-sized icons) get a
-> simplified variant with fewer, thicker cells (e.g. 2x2 with the red hole), and the moving-hole
-> animation is used for the Plymouth boot splash (phase 7).
+> **Chosen (2026-10-13): B, "Dead pixel lattice".** The geometry lives in
+> `tools/nullgrid/nullgrid/logo.py`. From it, `assets/logo/generate.py` writes the ASCII logo
+> (`nullgrid.txt`, for fastfetch), `nullgrid.svg`, and `nullgrid-small.svg`. The small one is a
+> simplified 2x2 variant for 16-32 px. The wallpaper draws the mark itself, in the theme's
+> colors. The moving-hole animation is for the Plymouth boot splash (phase 7).
+>
+> ![logo](../assets/logo/nullgrid.svg)
 
 All three are pure geometry, so they can be drawn as SVG by a generator script, recoloured per
 theme, and still read at 16 px (favicon/tray) and as ASCII (fastfetch).

@@ -12,10 +12,37 @@ process = "kitty"
 signal = "USR1"                       # kitty re-reads its config on SIGUSR1
 
 [hyprland]
-template = "hyprland.conf.j2"
-target = "{config_home}/hypr/nullgrid-theme.conf"
-reload = ["hyprctl", "reload"]
+# Hyprland 0.55+ reads Lua: ~/.config/hypr/hyprland.lua loads this and the keys file.
+template = "hyprland.lua.j2"
+target = "{config_home}/hypr/nullgrid-theme.lua"
+reload = ["hyprctl", "reload", "config-only"]
 env = "HYPRLAND_INSTANCE_SIGNATURE"
+
+[hyprland-keys]
+template = "hyprland-keys.lua.j2"
+target = "{config_home}/hypr/nullgrid-keys.lua"
+reload = ["hyprctl", "reload", "config-only"]
+env = "HYPRLAND_INSTANCE_SIGNATURE"
+
+[sway]
+# The fallback / lite session. ~/.config/sway/config includes both files.
+template = "sway.conf.j2"
+target = "{config_home}/sway/nullgrid-theme"
+reload = ["swaymsg", "reload"]
+env = "SWAYSOCK"
+
+[sway-keys]
+template = "sway-keys.conf.j2"
+target = "{config_home}/sway/nullgrid-keys"
+reload = ["swaymsg", "reload"]
+env = "SWAYSOCK"
+
+[wallpaper]
+# Input of the wallpaper generator; a change re-renders it on every screen.
+template = "wallpaper.json.j2"
+target = "{config_dir}/generated/wallpaper.json"
+reload = ["nullgrid", "wallpaper", "apply"]
+env = "WAYLAND_DISPLAY"
 
 [hyprlock]
 template = "hyprlock.conf.j2"

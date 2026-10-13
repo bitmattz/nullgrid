@@ -12,8 +12,10 @@ from pathlib import Path
 
 from . import __version__, doctor, dotfiles
 from . import config as cfgmod
+from . import keybinds as kbmod
 from . import paths as pathmod
 from . import render
+from . import wallpaper
 
 # --------------------------------------------------------------------------- output
 _COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR") and os.environ.get("TERM") != "dumb"
@@ -71,26 +73,49 @@ def cmd_theme_list(args, paths) -> None:
         print(f"{mark} {name.ljust(width)}  {desc}{user}")
 
 
-def cmd_theme_set(args, paths) -> None:
-    preset = cfgmod.find_theme(paths, args.name)
+def set_theme(paths, name: str, *, reset_colors: bool = False, reload: bool = True) -> None:
+    preset = cfgmod.find_theme(paths, name)
     if preset is None:
         names = list(cfgmod.list_themes(paths))
-        hint = difflib.get_close_matches(args.name, names, n=1)
-        raise Fail(f"no theme named {args.name!r}" + (f" (did you mean {hint[0]!r}?)" if hint else "")
+        hint = difflib.get_close_matches(name, names, n=1)
+        raise Fail(f"no theme named {name!r}" + (f" (did you mean {hint[0]!r}?)" if hint else "")
                    + f". Available: {', '.join(names)}")
     cfgmod.load_theme(preset)  # refuse a broken preset before touching the config
     doc = cfgmod.ConfigDocument(paths)
-    doc.set("theme.preset", args.name)
-    if args.reset_colors:
+    doc.set("theme.preset", name)
+    if reset_colors:
         doc.remove("theme.colors")
     doc.save()
-    print(f"theme: {args.name}")
+    print(f"theme: {name}")
     settings = cfgmod.load(paths)
     kept = [o for o in cfgmod.overrides_in_use(settings.config) if o.startswith("theme.colors.")]
     if kept:
         print(paint("note:", "warn"), f"your config still overrides {', '.join(kept)} "
               "(use --reset-colors to drop them)")
-    print_report(render.apply(settings, paths, reload="none" if args.no_reload else "changed"))
+    print_report(render.apply(settings, paths, reload="changed" if reload else "none"))
+
+
+def cmd_theme_set(args, paths) -> None:
+    set_theme(paths, args.name, reset_colors=args.reset_colors, reload=not args.no_reload)
+
+
+def cmd_theme_step(args, paths) -> None:
+    """theme next / prev: cycle through the presets in `theme list` order."""
+    names = [n for n, p in cfgmod.list_themes(paths).items() if _loads(p)]
+    if not names:
+        raise Fail("no themes found")
+    current = cfgmod.load(paths).theme["meta"]["name"]
+    step = 1 if args.action == "next" else -1
+    i = names.index(current) + step if current in names else 0
+    set_theme(paths, names[i % len(names)])
+
+
+def _loads(theme_path) -> bool:
+    try:
+        cfgmod.load_theme(theme_path)
+        return True
+    except cfgmod.ConfigError:
+        return False
 
 
 def _editor() -> list[str]:
@@ -132,6 +157,64 @@ def cmd_theme_edit(args, paths) -> None:
 
 def cmd_theme_reload(args, paths) -> None:
     apply(paths, reload="none" if args.dry_run else "all", dry_run=args.dry_run)
+
+
+# --------------------------------------------------------------------------- keys / wallpaper
+def cmd_keys(args, paths) -> None:
+    settings = cfgmod.load(paths)
+    kb = settings.keybinds
+    rows = kbmod.summary(kb)
+    width = max(len(r[0]) for r in rows)
+    head = paint(f"keybinds: {kb['meta']['name']}", "head")
+    if kb["meta"]["description"]:
+        head += paint(f"  ({kb['meta']['description']})", "dim")
+    print(head)
+    for combo, label, _ in rows:
+        print(f"  {paint(combo.ljust(width), 'ok')}  {label}")
+    print(paint(f"\nchange them: copy {kbmod.find(paths, kb['meta']['name'])} to {paths.keybinds[0]}/<name>.toml,"
+                " then set [behavior] keybinds = \"<name>\"", "dim"))
+    if args.pause and sys.stdin.isatty():
+        try:
+            input(paint("\npress Enter to close ", "dim"))
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+
+def _size(text: str) -> tuple[int, int]:
+    try:
+        w, h = (int(v) for v in text.lower().split("x"))
+        if 16 <= w <= 16384 and 16 <= h <= 16384:
+            return w, h
+    except ValueError:
+        pass
+    raise argparse.ArgumentTypeError(f"expected a size like 1920x1080, got {text!r}")
+
+
+def _wallpaper_spec(paths) -> dict:
+    try:
+        return wallpaper.load_spec(paths)
+    except wallpaper.WallpaperError:
+        render.apply(cfgmod.load(paths), paths, reload="none")  # first run: generate it
+        return wallpaper.load_spec(paths)
+
+
+def cmd_wallpaper_render(args, paths) -> None:
+    spec = _wallpaper_spec(paths)
+    w, h = args.size
+    svg = wallpaper.render(spec, w, h)
+    if args.output is None:
+        sys.stdout.write(svg)
+    elif args.output.suffix == ".png":
+        wallpaper.to_png(svg, args.output)
+    else:
+        cfgmod.atomic_write(args.output, svg)
+
+
+def cmd_wallpaper_apply(args, paths) -> None:
+    _wallpaper_spec(paths)
+    for out, png in wallpaper.apply(paths):
+        if not args.quiet:
+            print(f"{out.name} {out.width}x{out.height}: {png}")
 
 
 # --------------------------------------------------------------------------- widgets / mode
@@ -214,10 +297,26 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--reset-colors", action="store_true", help="drop your [theme.colors] overrides")
     s.add_argument("--no-reload", action="store_true", help="write the files but don't signal running apps")
     s.set_defaults(func=cmd_theme_set)
+    tsub.add_parser("next", help="switch to the next theme in the list").set_defaults(func=cmd_theme_step)
+    tsub.add_parser("prev", help="switch to the previous theme").set_defaults(func=cmd_theme_step)
     tsub.add_parser("edit", help="edit nullgrid.toml, validate it, apply it").set_defaults(func=cmd_theme_edit)
     r = tsub.add_parser("reload", help="regenerate every config and reload running apps")
     r.add_argument("--dry-run", action="store_true", help="only show which files would change")
     r.set_defaults(func=cmd_theme_reload)
+
+    k = sub.add_parser("keys", help="list the desktop keybinds")
+    k.add_argument("--pause", action="store_true", help="wait for Enter before exiting (for a popup window)")
+    k.set_defaults(func=cmd_keys)
+
+    wp = sub.add_parser("wallpaper", help="render the HUD wallpaper, or show it on every screen")
+    wpsub = wp.add_subparsers(dest="action", required=True, metavar="ACTION")
+    wr = wpsub.add_parser("render", help="write the wallpaper as SVG (or PNG) for one screen size")
+    wr.add_argument("--size", type=_size, default=(1920, 1080), metavar="WxH", help="default 1920x1080")
+    wr.add_argument("-o", "--output", type=Path, help="file to write (.svg or .png); default: SVG to stdout")
+    wr.set_defaults(func=cmd_wallpaper_render)
+    wa = wpsub.add_parser("apply", help="render for each screen of this session and show it (swaybg)")
+    wa.add_argument("-q", "--quiet", action="store_true")
+    wa.set_defaults(func=cmd_wallpaper_apply)
 
     widget = sub.add_parser("widget", help="show or hide desktop widgets")
     wsub = widget.add_subparsers(dest="action", required=True, metavar="ACTION")
@@ -251,7 +350,7 @@ def main(argv: list[str] | None = None) -> int:
         err("fix the problems above, or run: nullgrid doctor")
     except render.RenderError as exc:
         err(f"rendering failed, no files were changed: {exc}")
-    except Fail as exc:
+    except (Fail, wallpaper.WallpaperError) as exc:
         err(str(exc))
     except KeyboardInterrupt:
         return 130

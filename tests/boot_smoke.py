@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Headless boot smoke test: boot the ISO, log in over serial, check the live system.
 
-It also screenshots tty1 (where the TTY dashboard runs) through the QEMU monitor, presses keys
-there, and saves PNGs to out/screens/ for a human to look at.
+tty1 logs in by itself and starts the desktop. Through the QEMU monitor the test screenshots it,
+presses keys there and saves PNGs to out/screens/ for a human to look at, while the serial
+console checks the session: Hyprland, then Sway (the lite profile), then TTY mode (the dashboard).
 
 Usage: boot_smoke.py [--bios] [iso]   (normally via `make test-boot`)
 Env:   BOOT_TIMEOUT  seconds to wait for the shell prompt (default 600; TCG is slow)
@@ -44,6 +45,19 @@ CHECKS = [
      r"JetBrains Mono,Orbitron,Rajdhani,"),
     ("kitty +runpy 'from kitty.config import load_config; print(load_config(\"'$HOME'/.config/kitty/kitty.conf\").font_family)'",
      r"JetBrains Mono"),
+]
+# Phase 4: the desktop on tty1. ENV points this serial shell at the session's compositor.
+ENV = ("export XDG_RUNTIME_DIR=/run/user/$(id -u); "
+       "export WAYLAND_DISPLAY=$(cd $XDG_RUNTIME_DIR && ls -d wayland-? | head -1); "
+       "export HYPRLAND_INSTANCE_SIGNATURE=$(ls -t $XDG_RUNTIME_DIR/hypr 2>/dev/null | head -1); "
+       "export SWAYSOCK=$(ls $XDG_RUNTIME_DIR/sway-ipc.*.sock 2>/dev/null | head -1)")
+HYPRLAND_CHECKS = [
+    ("Hyprland --verify-config -c ~/.config/hypr/hyprland.lua 2>&1 | tail -1", r"config ok"),
+    ("hyprctl configerrors -j | tr -d ' \\t\\n'", r'\[(""|)\]'),
+    ("hyprctl monitors | grep -o '1600x900'", r"1600x900"),
+    ("pgrep -x swaybg >/dev/null && ls ~/.cache/nullgrid/wallpaper/ | grep -c 1600x900", r"[1-9]"),
+    ("hyprctl clients | grep -c 'class: nullgrid-welcome'", r"1"),  # the login terminal
+    ("hyprctl binds | grep -c 'dispatcher'", r"[1-9]\d+"),
 ]
 # Run when a check fails, to make the report actionable.
 DIAGNOSTICS = "systemctl --failed --no-legend --plain --full; journalctl -b -p warning --no-pager -o cat | tail -n 30"
@@ -126,6 +140,7 @@ class Monitor:
         return buf.decode(errors="replace")
 
     def screenshot(self, name: str) -> str:
+        """Saves out/screens/<name>.png and prints where."""
         os.makedirs(SCREENS, exist_ok=True)
         path = os.path.join(SCREENS, f"{name}.png")
         self.cmd(f"screendump {path} -f png")
@@ -133,6 +148,7 @@ class Monitor:
         if uid and gid and os.path.exists(path):
             for p in (SCREENS, path):
                 os.chown(p, int(uid), int(gid))
+        print(f"[info] screenshot {os.path.relpath(path, ROOT)}")
         return path
 
     def keys(self, *names: str) -> None:
@@ -143,24 +159,103 @@ class Monitor:
 
 def tty1_tour(mon: Monitor) -> None:
     """Screenshot the dashboard on tty1, switch theme from it, quit to the shell prompt."""
-    shots = [mon.screenshot("tty1-dashboard")]
+    mon.screenshot("tty1-dashboard")
     mon.keys("t")                  # next theme, restyles the console live
     time.sleep(6)
-    shots.append(mon.screenshot("tty1-dashboard-next-theme"))
+    mon.screenshot("tty1-dashboard-next-theme")
     mon.keys("q")                  # leave the dashboard
     time.sleep(3)
     mon.keys("l", "s", "spc", "minus", "a", "ret")
     time.sleep(2)
-    shots.append(mon.screenshot("tty1-shell"))
-    for shot in shots:
-        print(f"[info] screenshot {os.path.relpath(shot, ROOT)}")
+    mon.screenshot("tty1-shell")
+
+
+class Checker:
+    def __init__(self, con: Console):
+        self.con = con
+        self.failures: list[str] = []
+
+    def check(self, command: str, expect: str, timeout: float = 180) -> bool:
+        body = self.con.run(command, timeout)
+        ok = any(re.fullmatch(expect, l) for l in body)
+        print(f"[{'ok' if ok else 'FAIL'}] {command[:120]}  ->  {' | '.join(body)[-200:]}")
+        if not ok:
+            self.failures.append(command)
+        return ok
+
+    def wait(self, command: str, expect: str, seconds: int) -> bool:
+        """Poll on the VM side until command prints a line matching expect."""
+        loop = (f"for i in $(seq {seconds}); do out=$({command}); "
+                f"printf '%s\\n' \"$out\" | grep -qxE '{expect}' && break; sleep 1; done; printf '%s\\n' \"$out\"")
+        return self.check(loop, expect, seconds + 60)
+
+    def info(self, command: str) -> None:
+        print(f"[info] {command[:60]}  ->  {' | '.join(self.con.run(command, 60))[-300:]}")
+
+
+def restart_tty1(c: Checker) -> None:
+    """Log tty1 in again (autologin), so it starts whatever the config now says."""
+    c.con.run("sudo systemctl restart getty@tty1", 60)
+
+
+def desktop_tour(c: Checker, mon: Monitor) -> None:
+    # -- Hyprland (desktop mode is the default) --
+    if not c.wait("pgrep -x Hyprland >/dev/null && echo UP", "UP", 120):
+        c.info("cat ~/.local/state/nullgrid/session-*.log | tail -20")
+        return
+    c.wait("pgrep -x swaybg >/dev/null && echo UP", "UP", 60)
+    c.con.run(ENV, 30)
+    c.info("ls /dev/dri; echo SOFTWARE_RENDER=$(tr '\\0' '\\n' < /proc/$(pgrep -x Hyprland)/environ | grep -c NULLGRID_SOFTWARE_RENDER=1)")
+    for command, expect in HYPRLAND_CHECKS:
+        c.check(command, expect)
+    time.sleep(4)  # kitty draws fastfetch
+    mon.screenshot("desktop-hyprland")
+    c.info("free -m | awk '/Mem/ {print \"used MB:\", $3}'")
+    c.check("nullgrid theme set toxic-grid | grep -o 'reloaded: .*'", r"reloaded: .*hyprland.*wallpaper.*")
+    time.sleep(5)
+    mon.screenshot("desktop-hyprland-toxic-grid")
+    mon.keys("meta_l-slash")       # keybind help popup
+    time.sleep(4)
+    mon.screenshot("desktop-hyprland-keys")
+    c.check("hyprctl clients | grep -c 'class: nullgrid-keys'", r"1")
+    mon.keys("meta_l-q", "meta_l-d")  # close it, open the launcher
+    time.sleep(3)
+    mon.screenshot("desktop-hyprland-launcher")
+    mon.keys("esc")
+    mon.keys("meta_l-shift-e")     # the "leave the desktop" keybind
+    if not c.wait("pgrep -x Hyprland >/dev/null || echo GONE", "GONE", 20):
+        c.info("pgrep -a Hyprland; pgrep -a start-hyprland; tail -5 ~/.local/state/nullgrid/session-hyprland.log")
+
+    # -- Sway, chosen by the lite profile --
+    c.con.run("sed -i 's/^profile = \"full\"/profile = \"lite\"/' ~/.config/nullgrid/nullgrid.toml"
+              " && nullgrid theme reload >/dev/null", 60)
+    restart_tty1(c)
+    if c.wait("pgrep -x sway >/dev/null && echo UP", "UP", 90):
+        c.wait("pgrep -x swaybg >/dev/null && echo UP", "UP", 60)
+        c.con.run(ENV, 30)
+        c.check("swaymsg -t get_version | grep -o '\"human_readable\": \"[0-9.]*'", r'"human_readable": "1\.\d+.*')
+        c.check("swaymsg -t get_tree | grep -c '\"app_id\": \"nullgrid-welcome\"'", r"1")
+        time.sleep(4)
+        mon.screenshot("desktop-sway")
+        c.info("free -m | awk '/Mem/ {print \"used MB:\", $3}'")
+        c.con.run("swaymsg exit >/dev/null; sleep 2", 30)
+    else:
+        c.info("tail -20 ~/.local/state/nullgrid/session-sway.log")
+    c.con.run("sed -i 's/^profile = \"lite\"/profile = \"full\"/' ~/.config/nullgrid/nullgrid.toml", 30)
+
+    # -- TTY mode: the dashboard on tty1 --
+    c.con.run("nullgrid mode tty >/dev/null", 60)
+    restart_tty1(c)
+    c.wait("pgrep -f nullgrid-dash >/dev/null && echo UP", "UP", 60)
+    time.sleep(4)
 
 
 def main() -> int:
     mon_path = os.path.join(tempfile.mkdtemp(), "monitor.sock")
     con = Console([os.path.join(ROOT, "build", "run-vm.sh"), "--serial", f"--monitor={mon_path}", *sys.argv[1:]])
     mon = Monitor(mon_path)
-    failures = []
+    c = Checker(con)
+    failures = c.failures
     try:
         t0 = time.monotonic()
         con.wait_for(PROMPT, BOOT_TIMEOUT)
@@ -170,19 +265,16 @@ def main() -> int:
         time.sleep(2)  # zsh drops typed-ahead input when it execs
         con.run("stty -echo; PS1=''; export TERM=dumb SYSTEMD_COLORS=0", 30)
         for command, expect in CHECKS:
-            body = con.run(command)
-            ok = any(re.fullmatch(expect, l) for l in body)
-            print(f"[{'ok' if ok else 'FAIL'}] {command}  ->  {' | '.join(body)[-200:]}")
-            if not ok:
-                failures.append(command)
+            c.check(command, expect)
+        try:
+            desktop_tour(c, mon)
+            tty1_tour(mon)
+        except OSError as exc:
+            print(f"[FAIL] screenshots: {exc}")
+            failures.append("screenshots")
         if failures:
             print("---- diagnostics ----")
             print("\n".join(con.run(DIAGNOSTICS, 60)))
-        try:
-            tty1_tour(mon)
-        except OSError as exc:
-            print(f"[FAIL] tty1 screenshots: {exc}")
-            failures.append("tty1 screenshots")
         con.send("sudo poweroff")
         con.vm.wait(timeout=120)
     except (TimeoutError, RuntimeError, subprocess.TimeoutExpired) as exc:

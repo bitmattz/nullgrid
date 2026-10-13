@@ -6,7 +6,7 @@ NULLGRID is terminal-first. This page covers the shell, the apps, and TTY mode.
 
 The first time a user's zsh starts, it runs `nullgrid init`. That command:
 - copies the default dotfiles from `/usr/share/nullgrid/skel/` into the home (kitty, tmux, btop,
-  neovim). Files that already exist are kept;
+  neovim, Hyprland, Sway). Files that already exist are kept;
 - creates `~/.config/nullgrid/nullgrid.toml`;
 - renders every themed config.
 
@@ -57,8 +57,8 @@ running. The others pick up the new theme the next time they start.
 ## TTY mode
 
 Run `nullgrid mode tty` (or set `[behavior] default_mode = "tty"`). After that, logging in on tty1
-starts the **dashboard** (`nullgrid-dash`) instead of the desktop. Until the desktop exists
-(phase 4), desktop mode also falls back to the dashboard.
+starts the **dashboard** (`nullgrid-dash`) instead of the desktop ([DESKTOP.md](DESKTOP.md)).
+If the desktop can't start (no usable GPU), desktop mode falls back to the dashboard too.
 
 On the Linux console:
 - the font is Terminus (`/etc/vconsole.conf`);

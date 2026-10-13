@@ -100,6 +100,25 @@ def run(paths: Paths) -> list[Check]:
     else:
         add(INFO, "fontconfig not installed; skipping the font check")
 
+    # -- desktop ------------------------------------------------------------
+    # A compositor config that doesn't load the generated files silently ignores every theme change.
+    for app, main, needs in (("Hyprland", "hypr/hyprland.lua", ("nullgrid-theme.lua", "nullgrid-keys.lua")),
+                             ("sway", "sway/config", ("nullgrid-theme", "nullgrid-keys"))):
+        if not shutil.which(app):
+            continue
+        f = paths.config_home / main
+        if not f.is_file():
+            add(WARN, f"{f} is missing: {app} won't use the NULLGRID look or keybinds. Run: nullgrid init")
+            continue
+        text = f.read_text(errors="replace")
+        if missing := [n for n in needs if n not in text]:
+            add(WARN, f"{f} doesn't load {' or '.join(missing)}: theme and keybind changes won't reach {app}"
+                      f" (compare with {paths.skel / '.config' / main})")
+    if shutil.which("Hyprland") or shutil.which("sway"):
+        for tool, pkg in (("swaybg", "swaybg"), ("rsvg-convert", "librsvg")):
+            if not shutil.which(tool):
+                add(WARN, f"{tool} not found (package {pkg}): no wallpaper")
+
     if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
         add(OK, "running inside Hyprland")
     elif os.environ.get("WAYLAND_DISPLAY"):

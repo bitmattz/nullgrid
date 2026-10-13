@@ -1,0 +1,26 @@
+{{ header("#") }}
+# Keybind set "{{ keybinds.meta.name }}" (behavior.keybinds in nullgrid.toml). `nullgrid keys` lists it.
+{% set cmd = {
+    "close": "kill",
+    "fullscreen": "fullscreen toggle",
+    "float": "floating toggle",
+    "exit": "exit",
+} %}
+{% for b in binds %}
+{% if b.command %}
+bindsym {{ b.combo | sway_combo }} exec {{ b.command | json }}
+{% elif b.action == "workspace" %}
+bindsym {{ b.combo | sway_combo }} workspace number {{ b.workspace }}
+{% elif b.action == "move_to_workspace" %}
+bindsym {{ b.combo | sway_combo }} move container to workspace number {{ b.workspace }}
+{% elif b.action.startswith("focus_") %}
+bindsym {{ b.combo | sway_combo }} focus {{ b.action[6:] }}
+{% elif b.action.startswith("move_") %}
+bindsym {{ b.combo | sway_combo }} move {{ b.action[5:] }}
+{% else %}
+bindsym {{ b.combo | sway_combo }} {{ cmd[b.action] }}
+{% endif %}
+{% endfor %}
+
+# SUPER + left/right mouse button: move/resize floating windows
+floating_modifier Mod4 normal

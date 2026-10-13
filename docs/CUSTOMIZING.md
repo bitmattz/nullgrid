@@ -11,9 +11,13 @@ the apps that are running. You never set the same color in twelve places.
 | `nullgrid theme list` | list theme presets; `*` marks the active one, `[user]` your own |
 | `nullgrid theme set <name>` | switch preset, regenerate everything, reload running apps |
 | `nullgrid theme set <name> --reset-colors` | ...and drop your `[theme.colors]` overrides |
+| `nullgrid theme next` / `prev` | switch to the next / previous preset (`SUPER+T` on the desktop) |
 | `nullgrid theme edit` | open `nullgrid.toml` in `$EDITOR`; on save it's validated, then applied. An invalid edit can be re-edited or reverted |
 | `nullgrid theme reload` | regenerate every file and reload every running app (`--dry-run`: only list what would change) |
 | `nullgrid widget list` / `widget toggle <name>` | show or hide a desktop widget |
+| `nullgrid keys [--pause]` | list the desktop keybinds (see [DESKTOP.md](DESKTOP.md)) |
+| `nullgrid wallpaper apply` | render the HUD wallpaper for every screen of the running session and show it |
+| `nullgrid wallpaper render [--size WxH] [-o FILE]` | write it as SVG or PNG (default: 1920x1080 SVG to stdout) |
 | `nullgrid mode` / `mode desktop\|tty` | print or set the session started at login |
 | `nullgrid init [--reset]` | set up a home: default dotfiles (existing ones kept unless `--reset`), `nullgrid.toml`, generated files. Runs by itself at first login |
 | `nullgrid doctor [-v]` | check config, themes, templates, generated files, fonts, session. Exit code 1 only on real errors |
@@ -61,14 +65,16 @@ bottom-left bottom-right`.
 
 | Key | Default | |
 |---|---|---|
-| `decor.circuit_lines`, `matrix_rain`, `data_text` | `true` | wallpaper/overlay layers |
-| `decor.scanlines` | `false` | |
+| `decor.circuit_lines` | `true` | wallpaper: circuit traces and corner brackets |
+| `decor.matrix_rain` | `true` | wallpaper: faint character columns |
+| `decor.data_text` | `true` | wallpaper: barcode, data blocks, warning triangle, keymap |
+| `decor.scanlines` | `false` | wallpaper: scanline overlay |
 | `behavior.animation_speed` | `1.0` | multiplier, 0.25-4 (2 = twice as fast) |
 | `behavior.reduce_motion` | `false` | no animations or glitch effects |
 | `behavior.default_mode` | `"desktop"` | `desktop` or `tty` |
-| `behavior.keybinds` | `"default"` | keybind set (phase 4) |
+| `behavior.keybinds` | `"default"` | keybind set: `keybinds/<name>.toml` in `~/.config/nullgrid/` or `/usr/share/nullgrid/` ([DESKTOP.md](DESKTOP.md)) |
 | `behavior.greeting` | `"fastfetch"` | `none`: no fastfetch when a desktop terminal opens |
-| `performance.profile` | `"full"` | `lite`: no blur, shadows or animations; slower widget refresh |
+| `performance.profile` | `"full"` | `lite`: the Sway session, no blur, glow or animations, slower widget refresh |
 
 ## Theme presets
 
@@ -92,7 +98,9 @@ selection color0`..`color15`). `[fonts]` and `[style]` are optional (defaults as
 | Name | File | Reloaded live |
 |---|---|---|
 | kitty | `~/.config/kitty/nullgrid-theme.conf` | yes (SIGUSR1) |
-| hyprland | `~/.config/hypr/nullgrid-theme.conf` | yes (`hyprctl reload`) |
+| hyprland / hyprland-keys | `~/.config/hypr/nullgrid-theme.lua` / `nullgrid-keys.lua` | yes (`hyprctl reload`) |
+| sway / sway-keys | `~/.config/sway/nullgrid-theme` / `nullgrid-keys` | yes (`swaymsg reload`) |
+| wallpaper | `~/.config/nullgrid/generated/wallpaper.json` (the wallpaper's input) | yes (`nullgrid wallpaper apply`) |
 | hyprlock | `~/.config/hypr/nullgrid-hyprlock.conf` | read at each lock |
 | quickshell | `~/.config/nullgrid/generated/theme.json` | yes (file is watched) |
 | mako | `~/.config/mako/config` | yes (`makoctl reload`) |
@@ -146,13 +154,15 @@ What templates can use:
 | `theme` | the whole theme, incl. `theme.meta.name` |
 | `sound`, `widgets`, `decor`, `behavior`, `performance` | the config sections |
 | `effects` | `blur`, `shadows`, `animations`, `lite` after applying `performance.profile` and `reduce_motion` |
+| `keybinds`, `binds`, `keymap` | the keybind set; its binds (`combo`, `action`, `label`, `command`, `workspace`); the wallpaper's short list |
 | `ms(base)` | an animation duration in ms scaled by `animation_speed` (0 when motion is off) |
 | `header(prefix[, suffix])` | the "generated, don't edit" comment in the file's comment syntax |
 | `Color("#rrggbb")` | make a color |
 | `ansi(color)`, `ansi_roles` | the terminal palette slot (0-15) closest to a color, and that slot for each role (`ansi_roles.primary`, ...). Use these for anything that must also work on the Linux console |
 | `ansi_name(i, flavor)` | how an app spells slot `i`: `plain` (`bright_cyan`), `starship`, `textual`, `ratatui` (yazi), `basic` (8 names) |
 | `sgr(i[, bold])` | the escape sequence for slot `i` as foreground; `sgr()` resets |
-| `\| json`, `\| tf` | filters: JSON dump (colors as `"#rrggbb"`); `true`/`false` |
+| `\| json`, `\| tf`, `\| lua` | filters: JSON dump (colors as `"#rrggbb"`); `true`/`false`; a Lua string literal |
+| `\| hypr_combo`, `\| sway_combo` | a key combo in Hyprland (`SUPER + Q`) or Sway (`Mod4+q`) spelling |
 
 Colors print as `#rrggbb` and have formats and math built in:
 `.hex` `.bare` (`rrggbb`) `.rgb` (`r, g, b`) `.hexa(a)` (`#rrggbbaa`) `.barea(a)` `.argb(a)`

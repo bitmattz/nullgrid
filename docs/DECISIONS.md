@@ -118,6 +118,60 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   PipeWire arrives in phase 6. Also kitty's look, because it needs the Wayland session (phase 4).
   kitty's config does parse in the boot test.
 
+## Phase 4
+
+- **Hyprland's Lua config.** Arch ships Hyprland 0.56, which reads `hyprland.lua` (the old
+  hyprlang format is legacy). The generated files are Lua: `nullgrid-theme.lua` (look) and
+  `nullgrid-keys.lua` (binds). `~/.config/hypr/hyprland.lua` is the user's file. It `dofile`s the
+  package defaults (`/usr/share/nullgrid/hypr/nullgrid.lua`, so fixes ship with updates) and the
+  two generated files, then holds the user's own settings. `dofile` rather than `require`, so a
+  reload always re-reads them. The theme file returns the palette for the user's own rules.
+- **Configs are checked by the compositors themselves.** `Hyprland --verify-config` rejects
+  unknown options, rule fields and dispatcher arguments. The boot test runs it on the live
+  system. Sway's `-C` needs a backend even to validate, which is fine on the ISO. The unit tests
+  compile the generated Lua with `luac -p` (`lua` is now in the builder image).
+- **The glow is Hyprland's `decoration.glow`** (new in 0.5x): a neon halo in `colors.glow`, sized by
+  `style.glow`. The drop shadow is off. The active border is a glow-to-secondary gradient at 45°.
+- **One keybind file for both compositors.** A keybind set (`keybinds/<name>.toml`, chosen with
+  `behavior.keybinds`) maps actions to combos. Templates turn it into Hyprland Lua and Sway
+  syntax, and the same data feeds `nullgrid keys` and the keymap on the wallpaper, so none of
+  them can drift. Duplicate combos are errors. User sets live in `~/.config/nullgrid/keybinds/`,
+  the same way themes do. `behavior.keybinds` is a set name, not a path.
+- **Session start: tty1 login → `nullgrid-session`.** No display manager on the live ISO
+  (auto-login was agreed). The script picks Hyprland, or Sway for the `lite` profile. When the
+  compositor fails within 15 s it tries the other one. Exit status 1 (nothing started) makes the
+  login fall back to the TTY dashboard. Hyprland goes through `start-hyprland` (its watchdog
+  wrapper, recommended since 0.53). On NVIDIA's proprietary driver Sway gets `--unsupported-gpu`.
+  Leaving the desktop drops back to the tty1 shell rather than logging out.
+- **Wallpaper: procedural SVG, rendered per screen size.** `nullgrid/wallpaper.py` draws every
+  decor layer from the theme colors and `[decor]`, with a seeded RNG so the same input gives the
+  same picture. `rsvg-convert` turns it into a PNG for each screen's exact resolution, cached by
+  content hash, and `swaybg` shows it. swaybg works on both compositors (hyprpaper is
+  Hyprland-only, and it can't do SVG). Its input is `generated/wallpaper.json`, a normal
+  template target, so `theme set` re-renders it through the usual reload hooks. The new swaybg
+  starts before the old one is stopped, so there's no flash. The animated layer (falling matrix
+  columns) is left to the Quickshell overlay in phase 5, where `reduce_motion` can turn it off.
+- **Decor keeps clear of the phase 5 widgets.** The logo plate is top right, the data blocks top
+  left and bottom left (right of the dock), and the keymap is under the logo plate. The matrix
+  columns skip the text blocks so those stay readable.
+- **The keymap on the wallpaper is real data.** It lists the essential binds of the active set.
+  A new user sees where to start without a cheat sheet, and decoration earns its place.
+- **The login terminal floats.** It's `kitty --class nullgrid-welcome`, at 52% x 60%, left of
+  center. A tiled terminal would cover the whole HUD on first login. `SUPER+V` tiles it.
+- **Logo from one geometry.** `nullgrid/logo.py` holds the lattice (4x4, hole at 2.2) and draws it
+  as ASCII (the fastfetch logo, byte-identical to phase 3; a test guards it), as SVG, and as
+  a group inside the wallpaper. The SVG is also the `nullgrid` icon that os-release's `LOGO=` names.
+- **Package `nullgrid-desktop`**: the session scripts, compositor defaults, logo files and a
+  `wayland-sessions` entry (for the phase 7 greeter). It depends on hyprland, sway, swaybg,
+  librsvg, fuzzel, mako, hyprlock, grim, slurp, wl-clipboard and libnotify. All packages are 0.4.0.
+- **Measured in the boot test VM** (4 GB, virtio-gpu without 3D, so llvmpipe): about 700-750 MB
+  used at idle on Hyprland and 550-620 MB on Sway, and 0% CPU at idle. Software GL inflates
+  Hyprland (237 MB RSS) and kitty (178 MB). Xwayland starts eagerly (61 MB). Phase 9 measures on
+  real GPUs against the 700 MB target, and can make Xwayland lazy.
+- **Gotcha: zsh `print -P` runs command substitutions** once starship has turned on
+  `prompt_subst`. A backticked command name in a message started the desktop a second time.
+  Messages printed with `print -P` must not contain backticks or `$(...)`.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.
