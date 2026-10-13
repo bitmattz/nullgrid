@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Headless boot smoke test: boot the ISO, log in over serial, check the live system.
 
+It also screenshots tty1 (where the TTY dashboard runs) through the QEMU monitor, presses keys
+there, and saves PNGs to out/screens/ for a human to look at.
+
 Usage: boot_smoke.py [--bios] [iso]   (normally via `make test-boot`)
 Env:   BOOT_TIMEOUT  seconds to wait for the shell prompt (default 600; TCG is slow)
 """
 import os
 import re
+import socket
 import subprocess
+import tempfile
 import sys
 import threading
 import time
@@ -14,6 +19,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOT_TIMEOUT = int(os.environ.get("BOOT_TIMEOUT", "600"))
 PROMPT = "nullgrid@nullgrid"
+SCREENS = os.path.join(ROOT, "out", "screens")
 ANSI = re.compile(r"\x1b(\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(\x07|\x1b\\)|P[^\x1b]*\x1b\\|.)")
 
 CHECKS = [
@@ -27,6 +33,17 @@ CHECKS = [
     ("nullgrid theme set ice-protocol >/dev/null && grep -o '\"name\": \"[a-z-]*\"' ~/.config/nullgrid/generated/theme.json",
      r'"name": "ice-protocol"'),
     ("nullgrid doctor >/dev/null && echo DOCTOR_OK", r"DOCTOR_OK"),
+    # phase 3: the terminal experience (first login ran `nullgrid init`)
+    ("nullgrid-dash --check | tail -1", r"DASH_OK"),
+    ("fastfetch --pipe | grep -o 'NULLGRID OS // x86_64'", r"NULLGRID OS // x86_64"),
+    ("nvim --headless -c 'lua io.stdout:write(vim.g.colors_name .. \"\\n\")' -c qa", r"nullgrid"),
+    ("tmux new-session -d -s t && tmux show -gv status-left | grep -o ' NG '; tmux kill-server", r"NG"),
+    ("for c in starship starship-tty; do STARSHIP_CONFIG=~/.config/$c.toml starship prompt 2>&1 >/dev/null; done"
+     " | grep -ci warn", r"0"),
+    ("fc-list : family | grep -xE 'Rajdhani|Orbitron|JetBrains Mono' | sort -u | tr '\\n' ,",
+     r"JetBrains Mono,Orbitron,Rajdhani,"),
+    ("kitty +runpy 'from kitty.config import load_config; print(load_config(\"'$HOME'/.config/kitty/kitty.conf\").font_family)'",
+     r"JetBrains Mono"),
 ]
 # Run when a check fails, to make the report actionable.
 DIAGNOSTICS = "systemctl --failed --no-legend --plain --full; journalctl -b -p warning --no-pager -o cat | tail -n 30"
@@ -83,8 +100,66 @@ class Console:
         return [l.strip() for l in out.splitlines() if l.strip() and "__D$((1))NE__" not in l]
 
 
+class Monitor:
+    """The QEMU human monitor on a unix socket: screenshots and key presses for tty1."""
+
+    def __init__(self, path: str):
+        self.path = path
+        self.sock: socket.socket | None = None
+
+    def cmd(self, line: str) -> str:
+        if self.sock is None:
+            self.sock = socket.socket(socket.AF_UNIX)
+            self.sock.connect(self.path)
+            self._read()
+        self.sock.sendall(line.encode() + b"\n")
+        return self._read()
+
+    def _read(self) -> str:
+        buf = b""
+        self.sock.settimeout(30)
+        while not buf.endswith(b"(qemu) "):
+            chunk = self.sock.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+        return buf.decode(errors="replace")
+
+    def screenshot(self, name: str) -> str:
+        os.makedirs(SCREENS, exist_ok=True)
+        path = os.path.join(SCREENS, f"{name}.png")
+        self.cmd(f"screendump {path} -f png")
+        uid, gid = os.environ.get("HOST_UID"), os.environ.get("HOST_GID")
+        if uid and gid and os.path.exists(path):
+            for p in (SCREENS, path):
+                os.chown(p, int(uid), int(gid))
+        return path
+
+    def keys(self, *names: str) -> None:
+        for k in names:
+            self.cmd(f"sendkey {k}")
+            time.sleep(0.2)
+
+
+def tty1_tour(mon: Monitor) -> None:
+    """Screenshot the dashboard on tty1, switch theme from it, quit to the shell prompt."""
+    shots = [mon.screenshot("tty1-dashboard")]
+    mon.keys("t")                  # next theme, restyles the console live
+    time.sleep(6)
+    shots.append(mon.screenshot("tty1-dashboard-next-theme"))
+    mon.keys("q")                  # leave the dashboard
+    time.sleep(3)
+    mon.keys("l", "s", "spc", "minus", "a", "ret")
+    time.sleep(2)
+    shots.append(mon.screenshot("tty1-shell"))
+    for shot in shots:
+        print(f"[info] screenshot {os.path.relpath(shot, ROOT)}")
+
+
 def main() -> int:
-    con = Console([os.path.join(ROOT, "build", "run-vm.sh"), "--serial", *sys.argv[1:]])
+    mon_path = os.path.join(tempfile.mkdtemp(), "monitor.sock")
+    con = Console([os.path.join(ROOT, "build", "run-vm.sh"), "--serial", f"--monitor={mon_path}", *sys.argv[1:]])
+    mon = Monitor(mon_path)
     failures = []
     try:
         t0 = time.monotonic()
@@ -103,6 +178,11 @@ def main() -> int:
         if failures:
             print("---- diagnostics ----")
             print("\n".join(con.run(DIAGNOSTICS, 60)))
+        try:
+            tty1_tour(mon)
+        except OSError as exc:
+            print(f"[FAIL] tty1 screenshots: {exc}")
+            failures.append("tty1 screenshots")
         con.send("sudo poweroff")
         con.vm.wait(timeout=120)
     except (TimeoutError, RuntimeError, subprocess.TimeoutExpired) as exc:

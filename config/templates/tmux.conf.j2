@@ -1,0 +1,21 @@
+{{ header("#") }}
+# Sourced from tmux.conf. Colors are terminal palette slots, so this works on the console too.
+{% set P, S, T, D = ansi_roles.primary, ansi_roles.secondary, ansi_roles.text, ansi_roles.dim %}
+
+set -g status-style "bg=default,fg=colour{{ D }}"
+set -g status-left-length 40
+set -g status-right-length 80
+set -g status-left "#[fg=colour0,bg=colour{{ P }},bold] NG #[fg=colour{{ P }},bg=default,nobold] #S #[fg=colour{{ D }}]│ "
+set -g status-right "#[fg=colour{{ D }}]│ #[fg=colour{{ T }}]#H #[fg=colour{{ D }}]│ #[fg=colour{{ P }}]%Y-%m-%d %H:%M "
+set -g window-status-format "#[fg=colour{{ D }}] #I:#W "
+set -g window-status-current-format "#[fg=colour0,bg=colour{{ S }},bold] #I:#W "
+set -g window-status-separator ""
+
+set -g pane-border-style "fg=colour8"
+set -g pane-active-border-style "fg=colour{{ P }}"
+set -g message-style "fg=colour{{ P }},bg=colour0"
+set -g message-command-style "fg=colour{{ S }},bg=colour0"
+set -g mode-style "fg=colour0,bg=colour{{ P }}"
+set -g clock-mode-colour "colour{{ P }}"
+set -g display-panes-active-colour "colour{{ P }}"
+set -g display-panes-colour "colour{{ D }}"

@@ -19,8 +19,8 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make repo` | builds every `pkg/*/PKGBUILD` into the local pacman repo `out/repo/` |
 | `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (for Hyprland, later phases) |
-| `make test` | unit + snapshot tests of the `nullgrid` tool, in the builder container |
-| `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, and that `nullgrid` can switch themes and passes `doctor` |
+| `make test` | unit + snapshot tests of `nullgrid` and `nullgrid-dash`, in the builder container |
+| `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, that `nullgrid` can switch themes and passes `doctor`, and that the terminal apps load their generated configs. It also screenshots tty1 (dashboard, theme switch, shell) into `out/screens/` |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 

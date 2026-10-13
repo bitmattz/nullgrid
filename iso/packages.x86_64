@@ -24,11 +24,11 @@ syslinux
 ## Live session basics
 # live user runs admin commands without a root login
 sudo
-# default shell (themed in phase 3)
+# default shell
 zsh
 # pager for man pages and logs
 less
-# simple editor until neovim lands in phase 3
+# small fallback editor (neovim is the default)
 nano
 
 ## Networking
@@ -40,3 +40,39 @@ networkmanager
 nullgrid-base
 # theme engine + `nullgrid` CLI (pulls in python, python-jinja, python-tomlkit)
 nullgrid-core
+# themed TTY dashboard and launcher (python-textual, python-psutil)
+nullgrid-dash
+# UI fonts not in Arch: Rajdhani, Orbitron (OFL)
+nullgrid-fonts
+# zsh setup, default dotfiles, ASCII logo; depends on the apps below
+nullgrid-terminal
+
+## Terminal experience (also pulled in by nullgrid-terminal; listed so the ISO's contents are explicit)
+# main terminal emulator (GPU-rendered, live config reload)
+kitty
+# terminal font (OFL)
+ttf-jetbrains-mono
+# Linux console font (has the box-drawing glyphs the TTY dashboard uses)
+terminus-font
+# fish-style suggestions in zsh
+zsh-autosuggestions
+# command highlighting in zsh
+zsh-syntax-highlighting
+# prompt with powerline-style segments
+starship
+# system info with the NULLGRID logo
+fastfetch
+# resource monitor
+btop
+# file manager
+yazi
+# editor (with the generated nullgrid colorscheme)
+neovim
+# git TUI
+lazygit
+# version control (lazygit needs it)
+git
+# audio visualizer
+cava
+# terminal multiplexer with the HUD status bar
+tmux

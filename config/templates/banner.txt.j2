@@ -1,0 +1,8 @@
+{#- Login banner, printed by the zsh setup on login shells. Only console-safe glyphs. -#}
+{% set P, S, D = ansi_roles.primary, ansi_roles.secondary, ansi_roles.dim %}
+
+{{ sgr(P, True) }}  ┌┐┌ ┬ ┬ ┬   ┬   {{ sgr(S, True) }}┌─┐ ┬─┐ ┬ ┬─┐{{ sgr() }}
+{{ sgr(P, True) }}  │││ │ │ │   │   {{ sgr(S, True) }}│ ┬ ├┬┘ │ │ │{{ sgr() }}
+{{ sgr(P, True) }}  ┘└┘ └─┘ ┴─┘ ┴─┘ {{ sgr(S, True) }}└─┘ ┴└─ ┴ ┴─┘{{ sgr() }}
+{{ sgr(D) }}  :: OPERATOR ONLINE // THEME {{ theme.meta.name | upper }}{{ sgr() }}
+

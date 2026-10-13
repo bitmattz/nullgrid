@@ -1,0 +1,26 @@
+# NULLGRID terminal experience: zsh setup, default dotfiles (copied into homes by
+# `nullgrid init`), the ASCII logo, and the terminal apps themselves.
+pkgname=nullgrid-terminal
+pkgver=0.3.0
+pkgrel=1
+pkgdesc="NULLGRID terminal experience: kitty, zsh, starship and themed TUI apps"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=(
+  'nullgrid-core' 'nullgrid-dash' 'nullgrid-fonts'
+  'kitty' 'ttf-jetbrains-mono'                        # terminal + its font
+  'zsh' 'zsh-autosuggestions' 'zsh-syntax-highlighting' 'starship'
+  'fastfetch' 'btop' 'yazi' 'neovim' 'lazygit' 'git' 'cava' 'tmux'
+  'terminus-font'                                     # Linux console font
+)
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+package() {
+  install -Dm644 config/zsh/nullgrid.zsh "$pkgdir/usr/share/nullgrid/zsh/nullgrid.zsh"
+  install -Dm644 config/zsh/zshrc "$pkgdir/etc/skel/.zshrc"
+  install -Dm644 assets/logo/nullgrid.txt "$pkgdir/usr/share/nullgrid/logo/nullgrid.txt"
+  cd config/skel
+  find . -type f -exec install -Dm644 {} "$pkgdir/usr/share/nullgrid/skel/{}" \;
+}

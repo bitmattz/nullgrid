@@ -60,3 +60,59 @@ target = "{config_dir}/generated/tty-palette.sh"
 reload = ["sh", "{target}"]
 env = "TERM=linux"
 terminal = true
+
+[shell-env]
+# Settings as environment variables, read at shell startup (no Python on the login path).
+template = "shell-env.sh.j2"
+target = "{config_dir}/generated/shell-env.sh"
+
+[starship]
+template = "starship.toml.j2"
+target = "{config_home}/starship.toml"
+vars = { tty = false }
+
+[starship-tty]
+template = "starship.toml.j2"
+target = "{config_home}/starship-tty.toml"
+vars = { tty = true }
+
+[fastfetch]
+template = "fastfetch.jsonc.j2"
+target = "{config_home}/fastfetch/config.jsonc"
+
+[tmux]
+template = "tmux.conf.j2"
+target = "{config_home}/tmux/nullgrid-theme.conf"
+process = "tmux: server"
+reload = ["tmux", "source-file", "{config_home}/tmux/tmux.conf"]
+
+[yazi]
+template = "yazi-theme.toml.j2"
+target = "{config_home}/yazi/theme.toml"
+vars = { tty = false }
+
+[yazi-tty]
+# Used on the console via YAZI_CONFIG_HOME (no icon glyphs there).
+template = "yazi-theme.toml.j2"
+target = "{config_home}/yazi-tty/theme.toml"
+vars = { tty = true }
+
+[lazygit]
+template = "lazygit.yml.j2"
+target = "{config_home}/lazygit/config.yml"
+
+[cava]
+template = "cava.j2"
+target = "{config_home}/cava/config"
+vars = { tty = false }
+process = "cava"
+signal = "USR1"
+
+[cava-tty]
+template = "cava.j2"
+target = "{config_home}/cava/config-tty"
+vars = { tty = true }
+
+[banner]
+template = "banner.txt.j2"
+target = "{config_dir}/generated/banner"

@@ -3,11 +3,15 @@ from pathlib import Path
 
 import pytest
 
-from conftest import REPO, write_config
+from ngtest import REPO, write_config
 from nullgrid import config, render
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 UPDATE = os.environ.get("NULLGRID_UPDATE_SNAPSHOTS") == "1"
+ALL_TARGETS = {"kitty", "hyprland", "hyprlock", "quickshell", "mako", "fuzzel", "btop", "nvim", "gtk", "qt",
+               "tty", "shell-env", "starship", "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty",
+               "lazygit", "cava", "cava-tty", "banner"}
+N = len(ALL_TARGETS)
 
 
 def rendered(paths, config_text=""):
@@ -22,8 +26,7 @@ def rendered(paths, config_text=""):
 def test_snapshots(paths, preset):
     """Every template, rendered for every preset. Update: NULLGRID_UPDATE_SNAPSHOTS=1 pytest"""
     targets, out = rendered(paths, f'[theme]\npreset = "{preset}"\n')
-    assert {t.name for t in targets} == {"kitty", "hyprland", "hyprlock", "quickshell", "mako", "fuzzel",
-                                         "btop", "nvim", "gtk", "qt", "tty"}
+    assert {t.name for t in targets} == ALL_TARGETS
     snap_dir = SNAPSHOTS / preset
     for t in targets:
         snap = snap_dir / f"{t.name}{''.join(Path(t.template).suffixes[:-1]) or '.txt'}"
@@ -63,10 +66,10 @@ def test_animation_speed_scales_durations(paths):
 def test_apply_is_idempotent(paths):
     s = config.load(paths)
     first = render.apply(s, paths)
-    assert len(first.written) == 11 and not first.backups
+    assert len(first.written) == N and not first.backups
     assert all(t.path.is_file() for t in first.written)
     second = render.apply(s, paths)
-    assert second.written == [] and len(second.unchanged) == 11
+    assert second.written == [] and len(second.unchanged) == N
 
 
 def test_hand_edits_are_backed_up(paths):
@@ -125,7 +128,7 @@ def test_bad_manifest_entry(paths):
 
 def test_dry_run_writes_nothing(paths):
     report = render.apply(config.load(paths), paths, dry_run=True)
-    assert len(report.written) == 11
+    assert len(report.written) == N
     assert not paths.config_home.exists()
 
 
@@ -161,4 +164,35 @@ def test_reload_only_changed(paths, monkeypatch):
     render.apply(s, paths)
     calls.clear()
     assert render.apply(s, paths).reloaded == []
-    assert len(render.apply(s, paths, reload="all").reloaded) == 11
+    assert len(render.apply(s, paths, reload="all").reloaded) == N
+
+
+def test_generated_toml_and_json_parse(paths):
+    import json
+    import tomllib
+    _, out = rendered(paths)
+    for name in ("starship", "starship-tty", "yazi", "yazi-tty"):
+        tomllib.loads(out[name])
+    json.loads("\n".join(l for l in out["fastfetch"].splitlines() if not l.startswith("//")))
+    json.loads(out["quickshell"])
+
+
+def test_tty_variants_use_only_console_glyphs(paths):
+    """The console font (Terminus) has no powerline/Nerd glyphs; TTY variants must not use them."""
+    _, out = rendered(paths)
+    console = set("─│┌┐└┘├┤┬┴┼█░▒■▲▼►◄◆·•›»↑↓")  # non-ASCII glyphs the Terminus font has
+    for name in ("starship-tty", "yazi-tty", "tmux", "cava-tty", "tty", "banner"):
+        bad = {ch for ch in out[name] if ord(ch) > 127 and ch not in console}
+        assert not bad, f"{name} uses glyphs the console font lacks: {bad}"
+    assert any(0xE000 <= ord(ch) <= 0xF8FF for ch in out["starship"])  # desktop prompt does
+    assert "[icon]" in out["yazi-tty"] and "[icon]" not in out["yazi"]
+
+
+def test_ansi_roles_follow_the_palette(paths):
+    _, out = rendered(paths, '[theme]\npreset = "toxic-grid"\n')
+    assert "NULLGRID_ANSI_PRIMARY=2" in out["shell-env"]        # acid green is slot 2
+    assert '"primary": 2' in out["quickshell"]
+    assert "colour2" in out["tmux"]
+    _, out = rendered(paths, '[theme]\npreset = "crimson-hud"\n')
+    assert "NULLGRID_ANSI_PRIMARY=6" in out["shell-env"]        # neon cyan is slot 6
+    assert "NULLGRID_ANSI_DIM=7" in out["shell-env"]            # a gray, not green

@@ -1,7 +1,16 @@
 {
+  "ansi": {
+    "dim": 8,
+    "glow": 2,
+    "primary": 2,
+    "secondary": 3,
+    "text": 15,
+    "warning": 11
+  },
   "behavior": {
     "animation_speed": 1.0,
     "default_mode": "desktop",
+    "greeting": "fastfetch",
     "keybinds": "default",
     "reduce_motion": false
   },

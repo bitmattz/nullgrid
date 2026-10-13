@@ -29,3 +29,10 @@ def test_math():
     assert black.lighten(1) == white
     assert black.contrast(white) == pytest.approx(21)
     assert white.contrast(white) == pytest.approx(1)
+
+
+def test_perceptual_distance():
+    gray, green, light_gray = Color("#7a8a8f"), Color("#3ddc97"), Color("#b8c7cb")
+    assert gray.distance(gray) == pytest.approx(0)
+    assert gray.distance(light_gray) < gray.distance(green)  # RGB distance gets this wrong
+    assert Color("#000000").distance("#ffffff") == pytest.approx(100, abs=0.5)

@@ -2,7 +2,7 @@ import tomllib
 
 import pytest
 
-from conftest import REPO, write_config
+from ngtest import REPO, write_config
 from nullgrid import config
 
 

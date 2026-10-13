@@ -11,6 +11,7 @@ templates/manifest.toml lists one entry per generated file:
     reload   = ["makoctl", "reload"]                   # ...run this command
     env      = "HYPRLAND_INSTANCE_SIGNATURE"           # only if this env var is set ("VAR=value" also works)
     terminal = false             # let the reload command write to our terminal
+    vars     = { tty = true }    # extra template variables (one template, several variants)
     enabled  = true
 
 A manifest.toml in ~/.config/nullgrid/templates/ is merged over the system one (add entries,
@@ -39,7 +40,7 @@ from . import __version__
 from .color import Color
 from .config import Settings, atomic_write, read_toml
 from .paths import Paths
-from .schema import Bool, Str, StrList, Table
+from .schema import Bool, Mapping, Str, StrList, Table
 
 TARGET = Table({
     "template": Str(),
@@ -51,6 +52,7 @@ TARGET = Table({
     "terminal": Bool(default=False),
     "enabled": Bool(default=True),
     "mode": Str(r"0?[0-7]{3}", hint="a file mode like '644'", default="644"),
+    "vars": Mapping(default={}),
 })
 
 
@@ -69,6 +71,7 @@ class Target:
     env: str = ""
     terminal: bool = False
     mode: int = 0o644
+    vars: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -106,6 +109,7 @@ def load_manifest(paths: Paths) -> list[Target]:
                                              home=Path.home())).expanduser(),
             process=entry["process"], signal=entry["signal"], reload=entry["reload"],
             env=entry["env"], terminal=entry["terminal"], mode=int(entry["mode"], 8),
+            vars=entry["vars"],
         ))
     return targets
 
@@ -116,7 +120,15 @@ def context(settings: Settings) -> dict[str, Any]:
     cfg, theme = settings.config, settings.theme
     lite = cfg["performance"]["profile"] == "lite"
     motion = not lite and not cfg["behavior"]["reduce_motion"]
-    speed = cfg["behavior"]["animation_speed"]
+    term = theme["colors"]["terminal"]
+    slots = [term[f"color{i}"] for i in range(16)]
+
+    def ansi(color: Color) -> int:
+        """Index (0-15) of the terminal color closest to color. Configs that must also work on
+        the Linux console use these, so they follow whatever palette the console has."""
+        return min(range(16), key=lambda i: slots[i].distance(color))
+
+    roles = ("primary", "secondary", "glow", "text", "dim", "warning")
     return {
         "theme": theme,
         "c": theme["colors"],
@@ -134,6 +146,8 @@ def context(settings: Settings) -> dict[str, Any]:
             "animations": motion,
             "lite": lite,
         },
+        "ansi": ansi,
+        "ansi_roles": {r: ansi(theme["colors"][r]) for r in roles},
         "version": __version__,
     }
 
@@ -156,6 +170,30 @@ def _plain(value: Any) -> Any:
     return value
 
 
+_BASE = ("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white")
+# How apps spell the 16 terminal colors. "basic" folds bright colors onto the 8 base names.
+_ANSI_NAMES = {
+    "plain": [*_BASE, *(f"bright_{n}" for n in _BASE)],                     # fastfetch, rich
+    "starship": [*_BASE, *(f"bright-{n}" for n in _BASE)],
+    "textual": [f"ansi_{n}" for n in _BASE] + [f"ansi_bright_{n}" for n in _BASE],
+    "ratatui": [*_BASE[:7], "gray", "darkgray",                                # yazi
+                *(f"light{n}" for n in _BASE[1:7]), "white"],
+    "basic": [*_BASE, *_BASE],                                                  # lazygit, cava
+}
+
+
+def ansi_name(index: int, flavor: str = "plain") -> str:
+    return _ANSI_NAMES[flavor][index]
+
+
+def sgr(index: int | None = None, bold: bool = False) -> str:
+    """Escape sequence for palette foreground color `index` (None: reset)."""
+    if index is None:
+        return "\033[0m"
+    code = 30 + index if index < 8 else 82 + index
+    return f"\033[{'1;' if bold else ''}{code}m"
+
+
 def environment(paths: Paths) -> jinja2.Environment:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader([str(p) for p in paths.templates]),
@@ -168,6 +206,8 @@ def environment(paths: Paths) -> jinja2.Environment:
     env.filters["json"] = lambda v, indent=2: json.dumps(_plain(v), indent=indent, sort_keys=True)
     env.filters["tf"] = lambda v: "true" if v else "false"
     env.globals["Color"] = Color
+    env.globals["ansi_name"] = ansi_name
+    env.globals["sgr"] = sgr
     return env
 
 
@@ -186,7 +226,7 @@ def render_all(settings: Settings, paths: Paths, targets: list[Target]) -> dict[
         try:
             tpl = env.get_template(t.template)
             out[t.name] = tpl.render(ctx, header=functools.partial(header, t.template),
-                                     ms=lambda base: _ms(base, ctx))
+                                     ms=lambda base: _ms(base, ctx), **t.vars)
         except jinja2.TemplateNotFound:
             raise RenderError(f"{t.name}: template {t.template!r} not found") from None
         except jinja2.TemplateError as exc:

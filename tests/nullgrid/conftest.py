@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "tools" / "nullgrid"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "nullgrid"))
 
 from nullgrid import cli, paths as pathmod, render  # noqa: E402
 
@@ -38,8 +37,3 @@ def run(capsys):
         out = capsys.readouterr()
         return code, out.out, out.err
     return _run
-
-
-def write_config(paths, text: str) -> None:
-    paths.config_dir.mkdir(parents=True, exist_ok=True)
-    paths.config_file.write_text(text)

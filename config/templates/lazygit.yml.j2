@@ -1,0 +1,22 @@
+{{ header("#") }}
+# Colors are palette names, so lazygit looks right in kitty and on the console.
+{% set P = ansi_name(ansi_roles.primary, "basic") %}
+{% set S = ansi_name(ansi_roles.secondary, "basic") %}
+{% set W = ansi_name(ansi(c.warning), "basic") %}
+gui:
+  border: single
+  nerdFontsVersion: ""
+  showRandomTip: false
+  theme:
+    activeBorderColor: [{{ P }}, bold]
+    inactiveBorderColor: [default]
+    searchingActiveBorderColor: [{{ W }}, bold]
+    optionsTextColor: [{{ P }}]
+    selectedLineBgColor: [black]
+    inactiveViewSelectedLineBgColor: [bold]
+    cherryPickedCommitFgColor: [{{ P }}]
+    cherryPickedCommitBgColor: [black]
+    markedBaseCommitFgColor: [{{ W }}]
+    markedBaseCommitBgColor: [black]
+    unstagedChangesColor: [{{ S }}]
+    defaultFgColor: [default]

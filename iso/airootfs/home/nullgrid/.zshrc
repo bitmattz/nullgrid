@@ -1,2 +1,4 @@
-# Placeholder until phase 3 ships the themed zsh config.
-PROMPT='%F{cyan}[%n@%m]%f %F{red}%~%f %# '
+# ~/.zshrc: NULLGRID shell setup (history, completion, plugins, prompt, theme).
+source /usr/share/nullgrid/zsh/nullgrid.zsh
+
+# Your own settings go below.

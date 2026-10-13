@@ -1,0 +1,21 @@
+{{ header("#") }}
+
+[general]
+framerate = {{ 20 if effects.lite else 60 }}
+bar_width = 2
+bar_spacing = 1
+
+[color]
+{% if tty %}
+# The console can't show gradients; one palette color instead.
+foreground = '{{ ansi_name(ansi_roles.primary, "basic") }}'
+{% else %}
+gradient = 1
+gradient_count = 3
+gradient_color_1 = '{{ c.primary }}'
+gradient_color_2 = '{{ c.glow }}'
+gradient_color_3 = '{{ c.secondary }}'
+{% endif %}
+
+[smoothing]
+noise_reduction = 77

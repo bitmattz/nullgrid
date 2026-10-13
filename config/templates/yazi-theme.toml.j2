@@ -1,0 +1,74 @@
+{{ header("#") }}
+# Merged over yazi's built-in theme. Colors are palette names, so the console variant works too.
+{% set P = ansi_name(ansi_roles.primary, "ratatui") %}
+{% set S = ansi_name(ansi_roles.secondary, "ratatui") %}
+{% set W = ansi_name(ansi(c.warning), "ratatui") %}
+
+[mgr]
+cwd = { fg = "{{ P }}", bold = true }
+border_symbol = "│"
+border_style = { fg = "darkgray" }
+find_keyword = { fg = "{{ W }}", bold = true, underline = true }
+marker_marked = { fg = "{{ P }}", bg = "{{ P }}" }
+marker_selected = { fg = "{{ S }}", bg = "{{ S }}" }
+count_selected = { fg = "black", bg = "{{ P }}" }
+
+[tabs]
+active = { fg = "black", bg = "{{ P }}", bold = true }
+inactive = { fg = "{{ P }}", bg = "black" }
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "", close = "" }
+
+[mode]
+normal_main = { fg = "black", bg = "{{ P }}", bold = true }
+normal_alt = { fg = "{{ P }}", bg = "black" }
+select_main = { fg = "black", bg = "{{ S }}", bold = true }
+select_alt = { fg = "{{ S }}", bg = "black" }
+unset_main = { fg = "black", bg = "{{ S }}", bold = true }
+unset_alt = { fg = "{{ S }}", bg = "black" }
+
+[status]
+sep_left = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+progress_normal = { fg = "{{ P }}", bg = "black" }
+progress_error = { fg = "{{ S }}", bg = "black" }
+
+[which]
+border = { fg = "{{ P }}" }
+cand = { fg = "{{ P }}" }
+
+[confirm]
+border = { fg = "{{ S }}" }
+title = { fg = "{{ S }}" }
+
+[spot]
+border = { fg = "{{ P }}" }
+title = { fg = "{{ P }}" }
+
+[pick]
+border = { fg = "{{ P }}" }
+active = { fg = "{{ S }}", bold = true }
+
+[input]
+border = { fg = "{{ P }}" }
+
+[cmp]
+border = { fg = "{{ P }}" }
+
+[tasks]
+border = { fg = "{{ P }}" }
+hovered = { fg = "{{ S }}", bold = true }
+
+[help]
+border = { fg = "{{ P }}" }
+chord = { fg = "{{ P }}" }
+{% if tty %}
+
+# The console font has no Nerd Font icons: show none.
+[icon]
+globs = []
+dirs = []
+files = []
+exts = []
+conds = []
+{% endif %}

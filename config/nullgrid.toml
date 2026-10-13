@@ -70,6 +70,7 @@ animation_speed = 1.0    # multiplier: 2.0 = twice as fast
 reduce_motion = false    # no animations, no glitch effects
 default_mode = "desktop" # desktop | tty  (or: nullgrid mode tty)
 keybinds = "default"
+greeting = "fastfetch"   # fastfetch | none: shown when a desktop terminal opens
 
 [performance]
 # full: everything on. lite: no blur, shadows or animations, slower widget

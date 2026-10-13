@@ -84,6 +84,25 @@ class Color:
         r, g, b = map(lin, self.tuple)
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
+    @property
+    def lab(self) -> tuple[float, float, float]:
+        """CIELAB (D65)."""
+        def lin(c: int) -> float:
+            c /= 255
+            return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = map(lin, self.tuple)
+        x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+        y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+        f = lambda t: t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116  # noqa: E731
+        fx, fy, fz = f(x), f(y), f(z)
+        return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+    def distance(self, other: Color | str) -> float:
+        """Perceptual difference (CIE76 delta E): ~2 is barely visible, >40 very different."""
+        o = other if isinstance(other, Color) else Color(other)
+        return sum((a - b) ** 2 for a, b in zip(self.lab, o.lab)) ** 0.5
+
     def contrast(self, other: Color | str) -> float:
         """WCAG contrast ratio, 1..21."""
         o = other if isinstance(other, Color) else Color(other)

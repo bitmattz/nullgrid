@@ -2,7 +2,7 @@
 
 System data (presets, templates, the default config) comes from, in order:
   1. $NULLGRID_DATA_DIR             installed layout, used by tests and packaging
-  2. the git checkout this file is in (themes/, config/templates/, config/nullgrid.toml)
+  2. the git checkout this file is in (themes/, config/templates/, config/nullgrid.toml, config/skel/)
   3. /usr/share/nullgrid            installed layout
 User files follow XDG: ~/.config/nullgrid/{nullgrid.toml,themes/,templates/} and
 ~/.local/state/nullgrid/ for bookkeeping. User themes and templates shadow system ones by name.
@@ -21,6 +21,7 @@ class Paths:
     themes: list[Path]          # searched in order, user first
     templates: list[Path]       # searched in order, user first
     default_config: Path
+    skel: Path                  # default dotfiles, copied into $HOME by `nullgrid init`
     config_home: Path           # $XDG_CONFIG_HOME
     config_dir: Path            # ~/.config/nullgrid
     state_dir: Path             # ~/.local/state/nullgrid
@@ -34,6 +35,10 @@ class Paths:
         return self.state_dir / "generated.json"
 
     @property
+    def init_marker(self) -> Path:
+        return self.state_dir / "initialized"
+
+    @property
     def user_themes(self) -> Path:
         return self.themes[0]
 
@@ -42,15 +47,17 @@ class Paths:
         return self.templates[0]
 
 
-def _system_layout() -> tuple[Path, Path, Path]:
-    """(themes dir, templates dir, default config) of the system data."""
+def _system_layout() -> tuple[Path, Path, Path, Path]:
+    """(themes dir, templates dir, default config, skel dir) of the system data."""
     if env := os.environ.get("NULLGRID_DATA_DIR"):
         base = Path(env)
-        return base / "themes", base / "templates", base / "nullgrid.toml"
-    repo = Path(__file__).resolve().parents[3]
-    if (repo / "themes").is_dir() and (repo / "config" / "templates").is_dir():
-        return repo / "themes", repo / "config" / "templates", repo / "config" / "nullgrid.toml"
-    return SYSTEM_DIR / "themes", SYSTEM_DIR / "templates", SYSTEM_DIR / "nullgrid.toml"
+    else:
+        repo = Path(__file__).resolve().parents[3]
+        if (repo / "themes").is_dir() and (repo / "config" / "templates").is_dir():
+            c = repo / "config"
+            return repo / "themes", c / "templates", c / "nullgrid.toml", c / "skel"
+        base = SYSTEM_DIR
+    return base / "themes", base / "templates", base / "nullgrid.toml", base / "skel"
 
 
 def _xdg(var: str, fallback: str) -> Path:
@@ -59,13 +66,14 @@ def _xdg(var: str, fallback: str) -> Path:
 
 
 def resolve() -> Paths:
-    themes, templates, default_config = _system_layout()
+    themes, templates, default_config, skel = _system_layout()
     config_home = _xdg("XDG_CONFIG_HOME", ".config")
     config_dir = config_home / "nullgrid"
     return Paths(
         themes=[config_dir / "themes", themes],
         templates=[config_dir / "templates", templates],
         default_config=default_config,
+        skel=skel,
         config_home=config_home,
         config_dir=config_dir,
         state_dir=_xdg("XDG_STATE_HOME", ".local/state") / "nullgrid",

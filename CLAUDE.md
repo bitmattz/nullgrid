@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-13: Phase 2 DONE, next is Phase 3
+### Status as of 2026-10-13: Phase 3 DONE, next is Phase 4
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -256,9 +256,35 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - Snapshots: after an intended template change run `make test NULLGRID_UPDATE_SNAPSHOTS=1`, review the diff.
 - Tests stub `render._processes` so they never signal the developer's real kitty/mako.
 
-**Next step, Phase 3 (terminal experience):** kitty.conf (includes `nullgrid-theme.conf`), zsh +
-plugins, starship (add a starship template: it has no include, so generate the palette into
-starship.toml), fastfetch logo, themed btop/yazi/nvim colorscheme (uses `nullgrid.palette`)/lazygit/cava;
-fonts packaged (Rajdhani, Orbitron, JetBrains Mono; OFL, record in `assets/LICENSES.md`); TTY mode:
-login honors `behavior.default_mode`, source `generated/tty-palette.sh` on the console, Textual
-dashboard, tmux/zellij theme; run `nullgrid theme reload` on first login of the live user.
+**Phase 3 delivered:**
+- Packages: `nullgrid-fonts` (Rajdhani + Orbitron from google/fonts @ pinned commit, sha256),
+  `nullgrid-dash` (`tools/nullgrid-dash/`, Textual), `nullgrid-terminal` (zsh setup
+  `config/zsh/nullgrid.zsh`, `/etc/skel/.zshrc`, skel dotfiles `config/skel/`, ASCII logo
+  `assets/logo/`). `build-packages.sh` builds in dependency order via a local `[nullgrid]` repo.
+- Core: `nullgrid init [--reset]` (copies skel, never overwrites; zsh runs it at first login),
+  manifest `vars` (one template -> desktop + `-tty` variants), `ansi()`/`ansi_roles`/`ansi_name()`/
+  `sgr()` template helpers, `behavior.greeting`. New targets: shell-env, banner, starship(+tty),
+  fastfetch, tmux, yazi(+tty), lazygit, cava(+tty). 22 targets total.
+- TTY mode: tty1 login runs `nullgrid-dash` (desktop mode falls back to it until phase 4);
+  Terminus console font (`iso/airootfs/etc/vconsole.conf`); console palette from the theme.
+- Live ISO: `/etc/motd` replaced by `/etc/nullgrid/live-hints` + the generated banner.
+- Tests: `make test` = 67 (incl. dashboard via Textual pilot). `make test-boot` checks every
+  terminal app's config on the ISO and saves tty1 screenshots to `out/screens/` (QEMU monitor).
+- Docs: `docs/TERMINAL.md`, phase-3 section in `docs/DECISIONS.md`, console glyph rule in STYLE.md.
+
+**Gotchas learned (phase 3):**
+- The Terminus console font lacks half blocks, eighth blocks, double lines, and powerline/Nerd glyphs.
+  Console-safe set is in `docs/STYLE.md`; `test_tty_variants_use_only_console_glyphs` enforces it.
+- Console = 16 colors: use palette slots (`ansi_roles`), never hex, in anything that may run on a TTY.
+- Textual ANSI themes must define `$ansi-background` & co. (see `textual_theme()` in the dashboard).
+- Two `conftest.py` files: don't `from conftest import`; shared helpers live in `tests/nullgrid/ngtest.py`.
+- cava segfaults without an audio server (even with an empty config); verify it once PipeWire is in (phase 6).
+- To see the console, read the PNGs `make test-boot` writes to `out/screens/`.
+
+**Next step, Phase 4 (compositor + window styling):** Hyprland session started from tty1 when
+`behavior.default_mode = "desktop"` (replace the fallback in `_ng_session` in `config/zsh/nullgrid.zsh`),
+`hyprland.conf` sourcing the generated `nullgrid-theme.conf`, keybinds, Sway fallback config,
+`[performance] lite` choosing Sway, wallpaper + decorative layer as SVG/generated (circuit traces,
+logo plate with concept B "dead pixel lattice" drawn as SVG from the same geometry as
+`assets/logo/generate_ascii.py`, matrix columns, barcode, data text), and a desktop screenshot in
+`make test-boot` (virtio-gpu; check software rendering works in QEMU without virgl).

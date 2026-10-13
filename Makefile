@@ -1,7 +1,7 @@
 # NULLGRID build entry points. Everything Arch-specific runs in the builder container.
 #   make iso        build out/nullgrid-YYYY.MM.DD-x86_64.iso
 #   make run        boot it in QEMU (UEFI). Variants: run-bios, run-gl
-#   make test       unit + snapshot tests of the nullgrid tool (in Docker)
+#   make test       unit + snapshot tests of nullgrid and nullgrid-dash (in Docker)
 #   make test-boot  headless boot + checks over serial (runs in Docker; no host QEMU needed)
 
 BUILDER  ?= nullgrid-builder
@@ -40,13 +40,15 @@ run-gl:
 test: builder
 	docker run --rm $(DOCKER_TTY) -e PYTHONDONTWRITEBYTECODE=1 -e NULLGRID_UPDATE_SNAPSHOTS \
 		--user $(shell id -u):$(shell id -g) -v $(CURDIR):/src $(BUILDER) \
-		python -m pytest -q -p no:cacheprovider /src/tests/nullgrid $(PYTEST_ARGS)
+		python -m pytest -q -p no:cacheprovider /src/tests/nullgrid /src/tests/nullgrid_dash $(PYTEST_ARGS)
 
 test-boot:
-	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -v $(CURDIR):/src $(BUILDER) python3 /src/tests/boot_smoke.py
+	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
+		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/boot_smoke.py
 
 test-boot-bios:
-	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -v $(CURDIR):/src $(BUILDER) python3 /src/tests/boot_smoke.py --bios
+	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
+		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/boot_smoke.py --bios
 
 shell: builder
 	docker run --rm -it --privileged -v $(CURDIR):/src -v $(WORKVOL):/work $(BUILDER) bash

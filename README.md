@@ -4,9 +4,9 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 2 (theme engine)**. The ISO boots to an auto-logged-in TTY and ships the
-> `nullgrid` tool, which renders themed configs for every app from one TOML file. The desktop
-> and sounds come in later phases (see `CLAUDE.md` section 9).
+> Status: **phase 3 (terminal experience)**. The ISO boots straight into a themed TTY dashboard,
+> with zsh + starship, kitty, neovim, yazi, btop, lazygit, tmux and fastfetch all styled from one
+> TOML file by the `nullgrid` tool. The desktop and sounds come in later phases (see `CLAUDE.md` section 9).
 
 ## Quick start
 
@@ -29,6 +29,7 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 
 - [BUILDING.md](docs/BUILDING.md): build and run
 - [CUSTOMIZING.md](docs/CUSTOMIZING.md): `nullgrid.toml`, themes, templates
+- [TERMINAL.md](docs/TERMINAL.md): shell, apps, TTY mode and the dashboard
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): logo concepts

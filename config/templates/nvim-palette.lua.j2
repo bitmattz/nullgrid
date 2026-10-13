@@ -12,5 +12,11 @@ return {
 {% endfor %}
   },
   selection = "{{ t.selection }}",
+  -- terminal palette slot of each role, for 'notermguicolors' (Linux console)
+  ansi = {
+{% for role, index in ansi_roles.items() %}
+    {{ role }} = {{ index }},
+{% endfor %}
+  },
   transparent = {{ (style.terminal_opacity < 1) | tf }},
 }

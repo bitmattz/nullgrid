@@ -8,3 +8,7 @@ only the palette changes between presets.
 - **Typography:** a condensed, technical UI font (open-licensed, e.g. Rajdhani, Oxanium, Chakra Petch, or Orbitron for display) and a clean mono font (JetBrains Mono / Iosevka) for the terminal. Verify licenses (OFL) before bundling.
 - **Motion:** quick (120–220 ms), slightly mechanical easing; glitch/flicker only for rare events (boot, lock); no motion sickness — respect a `reduce_motion` flag.
 - **Density:** small labels in uppercase, decorative serial numbers / coordinates, but readable — decoration must never cover content.
+- **Linux console:** the console font (Terminus) has only these non-ASCII glyphs that matter
+  here: `─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ █ ░ ▒ ■ ▲ ▼ ► ◄ ◆ · • › » ↑ ↓`. It has no half blocks,
+  double lines or powerline/Nerd glyphs. Anything shown on a TTY uses only these, and only
+  palette slots (0-15) as colors. Tests enforce both.

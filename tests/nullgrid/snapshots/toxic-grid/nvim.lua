@@ -32,5 +32,14 @@ return {
     "#f6fbf0",
   },
   selection = "#24331a",
+  -- terminal palette slot of each role, for 'notermguicolors' (Linux console)
+  ansi = {
+    primary = 2,
+    secondary = 3,
+    glow = 2,
+    text = 15,
+    dim = 8,
+    warning = 11,
+  },
   transparent = true,
 }

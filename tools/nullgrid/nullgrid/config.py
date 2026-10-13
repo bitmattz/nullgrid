@@ -130,6 +130,7 @@ BEHAVIOR = Table({
     "reduce_motion": Bool(default=False),
     "default_mode": Enum("desktop", "tty", default="desktop"),
     "keybinds": Str(default="default", doc="keybind set name or path to a file"),
+    "greeting": Enum("fastfetch", "none", default="fastfetch", doc="shown when a terminal opens"),
 })
 
 PERFORMANCE = Table({

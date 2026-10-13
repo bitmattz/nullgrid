@@ -15,6 +15,7 @@ the apps that are running. You never set the same color in twelve places.
 | `nullgrid theme reload` | regenerate every file and reload every running app (`--dry-run`: only list what would change) |
 | `nullgrid widget list` / `widget toggle <name>` | show or hide a desktop widget |
 | `nullgrid mode` / `mode desktop\|tty` | print or set the session started at login |
+| `nullgrid init [--reset]` | set up a home: default dotfiles (existing ones kept unless `--reset`), `nullgrid.toml`, generated files. Runs by itself at first login |
 | `nullgrid doctor [-v]` | check config, themes, templates, generated files, fonts, session. Exit code 1 only on real errors |
 
 The first command that changes a setting creates `nullgrid.toml` from the commented default
@@ -66,6 +67,7 @@ bottom-left bottom-right`.
 | `behavior.reduce_motion` | `false` | no animations or glitch effects |
 | `behavior.default_mode` | `"desktop"` | `desktop` or `tty` |
 | `behavior.keybinds` | `"default"` | keybind set (phase 4) |
+| `behavior.greeting` | `"fastfetch"` | `none`: no fastfetch when a desktop terminal opens |
 | `performance.profile` | `"full"` | `lite`: no blur, shadows or animations; slower widget refresh |
 
 ## Theme presets
@@ -100,6 +102,14 @@ selection color0`..`color15`). `[fonts]` and `[style]` are optional (defaults as
 | gtk | `~/.config/nullgrid/generated/gtk-colors.css` | phase 7 |
 | qt | `~/.config/qt6ct/colors/nullgrid.conf` | at next start |
 | tty | `~/.config/nullgrid/generated/tty-palette.sh` | yes, when run on a console |
+| shell-env | `~/.config/nullgrid/generated/shell-env.sh` | next shell |
+| banner | `~/.config/nullgrid/generated/banner` | next login |
+| starship / starship-tty | `~/.config/starship.toml` / `starship-tty.toml` | next prompt |
+| fastfetch | `~/.config/fastfetch/config.jsonc` | next run |
+| tmux | `~/.config/tmux/nullgrid-theme.conf` | yes (`tmux source-file`) |
+| yazi / yazi-tty | `~/.config/yazi/theme.toml` / `yazi-tty/theme.toml` | next start |
+| lazygit | `~/.config/lazygit/config.yml` | next start |
+| cava / cava-tty | `~/.config/cava/config` / `config-tty` | yes (SIGUSR1) |
 
 Most are fragments that the app's main config includes, so the rest of that config stays yours.
 If you edit a generated file by hand, the next render saves your version as `<file>.bak` before
@@ -120,6 +130,7 @@ process = "foot"                             # optional reload hook: only if foo
 signal = "USR1"                              # ...send it a signal, or
 # reload = ["some-cmd", "--reload", "{target}"]   ...run a command
 # env = "WAYLAND_DISPLAY"                    # only if this env var is set (or "VAR=value")
+# vars = { tty = true }                      # extra template variables (variants of one template)
 
 [btop]
 enabled = false                              # stop generating a system target
@@ -138,12 +149,15 @@ What templates can use:
 | `ms(base)` | an animation duration in ms scaled by `animation_speed` (0 when motion is off) |
 | `header(prefix[, suffix])` | the "generated, don't edit" comment in the file's comment syntax |
 | `Color("#rrggbb")` | make a color |
+| `ansi(color)`, `ansi_roles` | the terminal palette slot (0-15) closest to a color, and that slot for each role (`ansi_roles.primary`, ...). Use these for anything that must also work on the Linux console |
+| `ansi_name(i, flavor)` | how an app spells slot `i`: `plain` (`bright_cyan`), `starship`, `textual`, `ratatui` (yazi), `basic` (8 names) |
+| `sgr(i[, bold])` | the escape sequence for slot `i` as foreground; `sgr()` resets |
 | `\| json`, `\| tf` | filters: JSON dump (colors as `"#rrggbb"`); `true`/`false` |
 
 Colors print as `#rrggbb` and have formats and math built in:
 `.hex` `.bare` (`rrggbb`) `.rgb` (`r, g, b`) `.hexa(a)` (`#rrggbbaa`) `.barea(a)` `.argb(a)`
 (`#aarrggbb`, Qt) `.rgba(a)` (CSS) `.hypr(a)` (`rgba(rrggbbaa)`, Hyprland),
-`.mix(other, t)` `.lighten(t)` `.darken(t)` `.contrast(other)`.
+`.mix(other, t)` `.lighten(t)` `.darken(t)` `.contrast(other)` `.distance(other)` (perceptual, CIELAB).
 
 Templates use `StrictUndefined`: a misspelled name is an error, and when any template fails
 nothing is written. `nullgrid doctor` renders all of them as a check.

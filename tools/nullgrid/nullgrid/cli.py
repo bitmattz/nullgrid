@@ -8,8 +8,9 @@ import shlex
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
-from . import __version__, doctor
+from . import __version__, doctor, dotfiles
 from . import config as cfgmod
 from . import paths as pathmod
 from . import render
@@ -179,6 +180,26 @@ def cmd_doctor(args, paths) -> int:
     return code
 
 
+# --------------------------------------------------------------------------- init
+def cmd_init(args, paths) -> None:
+    report = dotfiles.install(paths, overwrite=args.reset)
+    if not paths.config_file.is_file():
+        cfgmod.ConfigDocument(paths).save()
+        report.copied.append(paths.config_file)
+    settings = cfgmod.load(paths)
+    result = render.apply(settings, paths)
+    paths.init_marker.parent.mkdir(parents=True, exist_ok=True)
+    paths.init_marker.touch()
+    if args.quiet:
+        return
+    home = str(Path.home())
+    for f in report.copied:
+        print(f"  + {str(f).replace(home, '~', 1)}")
+    if report.kept:
+        print(paint(f"  kept {len(report.kept)} existing file(s) (--reset replaces them, saving .bak copies)", "dim"))
+    print_report(result)
+
+
 # --------------------------------------------------------------------------- parser
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="nullgrid", description="Configure the NULLGRID desktop and terminal.")
@@ -208,6 +229,11 @@ def build_parser() -> argparse.ArgumentParser:
     m = sub.add_parser("mode", help="print or set the default session: desktop or tty")
     m.add_argument("mode", nargs="?", choices=("desktop", "tty"))
     m.set_defaults(func=cmd_mode)
+
+    i = sub.add_parser("init", help="set up this home: default dotfiles, nullgrid.toml, generated configs")
+    i.add_argument("--reset", action="store_true", help="also replace dotfiles you already have (.bak copies are kept)")
+    i.add_argument("-q", "--quiet", action="store_true")
+    i.set_defaults(func=cmd_init)
 
     d = sub.add_parser("doctor", help="check the system and config for problems")
     d.add_argument("-v", "--verbose", action="store_true", help="also show informational notes")

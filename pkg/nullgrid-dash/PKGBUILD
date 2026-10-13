@@ -1,0 +1,29 @@
+# NULLGRID TTY dashboard (nullgrid-dash): system panels + app launcher, Python/Textual.
+pkgname=nullgrid-dash
+pkgver=0.3.0
+pkgrel=1
+pkgdesc="NULLGRID TTY dashboard"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=('python' 'python-textual' 'python-psutil' 'nullgrid-core')
+makedepends=('python-build' 'python-installer' 'python-flit-core')
+checkdepends=('python-pytest')
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+build() {
+  cd tools/nullgrid-dash
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  python -c "import sys; sys.path.insert(0, 'tools/nullgrid-dash'); import nullgrid_dash as d; \
+    assert d.__version__ == '$pkgver', 'pkgver and nullgrid_dash.__version__ differ'"
+  PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/nullgrid_dash
+}
+
+package() {
+  cd tools/nullgrid-dash
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

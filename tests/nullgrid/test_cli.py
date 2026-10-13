@@ -1,7 +1,7 @@
 import json
 import stat
 
-from conftest import write_config
+from ngtest import write_config
 
 
 def test_version(run, capsys):
@@ -26,7 +26,7 @@ def test_theme_set_restyles_everything(run, paths):
     assert data["name"] == "ice-protocol"
 
     code, out, _ = run("theme", "set", "crimson-hud")
-    assert code == 0 and "updated 11 file(s)" in out
+    assert code == 0 and "updated" in out and "kitty" in out
 
 
 def test_theme_set_unknown(run, paths):
@@ -45,7 +45,7 @@ def test_theme_set_keeps_or_resets_color_overrides(run, paths):
 
 def test_theme_reload_and_dry_run(run, paths):
     code, out, _ = run("theme", "reload", "--dry-run")
-    assert code == 0 and "would update 11" in out and not paths.config_home.exists()
+    assert code == 0 and "would update" in out and not paths.config_home.exists()
     assert run("theme", "reload")[0] == 0
     code, out, _ = run("theme", "reload")
     assert "already up to date" in out
@@ -103,7 +103,7 @@ def test_theme_edit(run, paths, tmp_path, monkeypatch):
     editor.chmod(editor.stat().st_mode | stat.S_IEXEC)
     monkeypatch.setenv("EDITOR", str(editor))
     code, out, _ = run("theme", "edit")
-    assert code == 0 and "updated 11" in out
+    assert code == 0 and "updated" in out
     assert json.loads((paths.config_dir / "generated" / "theme.json").read_text())["name"] == "toxic-grid"
 
 
@@ -116,3 +116,27 @@ def test_theme_edit_reverts_invalid_edit_without_a_terminal(run, paths, tmp_path
     code, _, err = run("theme", "edit")
     assert code == 1 and "reverted" in err
     assert "[bogus]" not in paths.config_file.read_text()
+
+
+def test_init_copies_dotfiles_without_overwriting(run, paths):
+    kitty = paths.config_home / "kitty" / "kitty.conf"
+    kitty.parent.mkdir(parents=True)
+    kitty.write_text("# mine\n")
+    code, out, _ = run("init")
+    assert code == 0
+    assert kitty.read_text() == "# mine\n"                              # kept
+    assert (paths.config_home / "nvim" / "colors" / "nullgrid.lua").is_file()
+    assert (paths.config_home / "tmux" / "tmux.conf").is_file()
+    assert paths.config_file.is_file() and paths.init_marker.is_file()
+    assert (paths.config_home / "starship.toml").is_file()               # theme rendered too
+    assert "kept 1 existing file" in out
+
+    code, _, _ = run("init", "--reset", "--quiet")
+    assert code == 0 and "include nullgrid-theme.conf" in kitty.read_text()
+    assert kitty.with_name("kitty.conf.bak").read_text() == "# mine\n"
+
+
+def test_skel_files_follow_xdg_config_home(run, paths, monkeypatch, tmp_path):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "elsewhere"))
+    assert run("init", "-q")[0] == 0
+    assert (tmp_path / "elsewhere" / "kitty" / "kitty.conf").is_file()

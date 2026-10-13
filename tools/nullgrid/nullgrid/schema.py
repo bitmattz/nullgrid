@@ -79,6 +79,14 @@ class StrList(Field):
         return value
 
 
+class Mapping(Field):
+    """A table with free-form keys (checked by whoever uses it)."""
+    def check(self, value):
+        if not isinstance(value, dict):
+            raise Invalid(f"expected a table, got {value!r}")
+        return value
+
+
 class Enum(Field):
     def __init__(self, *choices: str, **kw):
         super().__init__(**kw)

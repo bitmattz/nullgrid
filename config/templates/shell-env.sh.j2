@@ -1,0 +1,11 @@
+{{ header("#") }}
+# Sourced by the NULLGRID zsh setup (and usable from any POSIX shell).
+export NULLGRID_THEME="{{ theme.meta.name }}"
+export NULLGRID_MODE="{{ behavior.default_mode }}"
+export NULLGRID_GREETING="{{ behavior.greeting }}"
+export NULLGRID_LITE={{ 1 if effects.lite else 0 }}
+export NULLGRID_REDUCE_MOTION={{ 1 if behavior.reduce_motion else 0 }}
+# Terminal palette slot (0-15) of each theme role, for configs that must also work on the console.
+{% for role, index in ansi_roles.items() %}
+export NULLGRID_ANSI_{{ role | upper }}={{ index }}
+{% endfor %}

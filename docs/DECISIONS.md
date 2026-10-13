@@ -79,6 +79,45 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 - **Repo code reaches PKGBUILDs as a tarball.** `build-packages.sh` puts `nullgrid-src.tar`
   (tools, themes, config, tests) next to each PKGBUILD, which lists it in `source=()`.
 
+## Phase 3
+
+- **Palette slots, not hex, for anything that can run on the console.** The Linux console has
+  16 colors and ignores 24-bit color. Each preset's terminal palette already contains its accent
+  colors. So the engine maps each role to its nearest palette slot (`ansi_roles`, by CIELAB
+  distance: plain RGB distance mapped gray `dim` to green). tmux, yazi, lazygit, fastfetch, the
+  zsh highlighting, the console prompt and the dashboard all use slots. The same file then looks
+  right in kitty and on a TTY, and it follows the theme.
+- **Console variants where glyphs differ.** Terminus has no powerline or Nerd glyphs, no half
+  blocks and no double lines. Starship, yazi and cava get a `-tty` variant from the same template
+  (`vars = { tty = true }` in the manifest), and zsh picks it when `TERM=linux`. The Phase 1 motd
+  wordmark used half blocks and rendered as junk on the console. It's replaced by a generated,
+  themed login banner drawn with box-drawing characters.
+- **Dotfiles: system file + skel + `nullgrid init`.** `~/.zshrc` is two lines that source
+  `/usr/share/nullgrid/zsh/nullgrid.zsh`, so fixes ship with updates. The editable defaults (kitty,
+  tmux, btop, nvim) are copied once by `nullgrid init`, which runs at first login and never
+  overwrites existing files. Generated theme fragments are separate files that those configs include.
+- **Settings reach the shell as env vars** (`generated/shell-env.sh`), so login doesn't start
+  Python just to read the mode or theme roles.
+- **tmux, not zellij.** Lighter (1.5 MB vs 52 MB), and its status bar is easy to theme with slots.
+- **Hand-written neovim colorscheme, no plugin manager.** It reads the generated palette, sets
+  gui and cterm colors (the console uses `notermguicolors`), and re-applies itself when the palette
+  file changes (it watches the directory, because the file is replaced atomically).
+- **Dashboard: Textual with an ANSI theme.** The panels draw their own text graphics: segmented
+  `■·` bars, and column graphs with `░▒█` on the console or eighth blocks in kitty. Textual's
+  stock widgets use glyphs the console lacks. It watches `theme.json`, and on a theme change it
+  also sets the console palette itself. Apps launch with `App.suspend()`.
+- **Fonts:** Rajdhani and Orbitron come from google/fonts at a pinned commit with checksums
+  (`pkg/nullgrid-fonts`). JetBrains Mono and Terminus come from Arch. kitty's built-in Nerd symbols
+  cover the prompt glyphs, so no Nerd Font package is needed.
+- **Packages:** `nullgrid-terminal` (zsh setup, skel, logo; it depends on all the terminal apps)
+  and `nullgrid-dash`. `build-packages.sh` now builds in dependency order through a local
+  `[nullgrid]` repo, so packages can depend on each other.
+- **Boot test screenshots.** The headless VM now has a VGA screen. The test drives tty1 through
+  the QEMU monitor (screenshots plus key presses) and saves PNGs to `out/screens/`.
+- **Not verified yet:** cava. It crashes without an audio server, even with an empty config, and
+  PipeWire arrives in phase 6. Also kitty's look, because it needs the Wayland session (phase 4).
+  kitty's config does parse in the boot test.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.
