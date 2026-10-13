@@ -10,6 +10,21 @@ It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 > and fastfetch are all styled from one TOML file by the `nullgrid` tool. The dock, bar, widgets
 > and sounds come in later phases (see `CLAUDE.md` section 9).
 
+## Screenshots
+
+Taken by `make test-boot` on the live ISO in QEMU (1600x900, software rendering).
+
+| | |
+|---|---|
+| ![Hyprland desktop, crimson-hud](docs/screenshots/desktop-hyprland.png) | ![The same desktop after `nullgrid theme set toxic-grid`](docs/screenshots/desktop-hyprland-toxic-grid.png) |
+| **Desktop** (crimson-hud): Hyprland, kitty with fastfetch, the HUD wallpaper | **Live theme switch**: `nullgrid theme set toxic-grid` restyles borders, terminal and wallpaper without logging out |
+| ![Keybind popup](docs/screenshots/desktop-hyprland-keys.png) | ![App launcher](docs/screenshots/desktop-hyprland-launcher.png) |
+| **`SUPER+/`**: the keybinds, from the same file Hyprland and Sway use | **`SUPER+D`**: the app launcher (fuzzel) |
+| ![Sway session](docs/screenshots/desktop-sway.png) | ![TTY dashboard](docs/screenshots/tty1-dashboard.png) |
+| **Sway**: the fallback and `lite` session | **TTY mode**: the dashboard on the Linux console |
+| ![Wallpaper, crimson-hud](docs/screenshots/wallpaper-crimson-hud.png) | ![Wallpaper, ice-protocol](docs/screenshots/wallpaper-ice-protocol.png) |
+| **The wallpaper** alone: circuit traces, logo plate, keymap, data blocks, all generated | ...and in ice-protocol |
+
 ## Quick start
 
 ```sh
