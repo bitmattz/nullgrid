@@ -7,6 +7,7 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 | Topic | Decision |
 |---|---|
 | Name | NULLGRID |
+| Logo | B, "Dead pixel lattice" (`docs/LOGO.md`): 4x4 cyan lattice with one glowing red missing cell; simplified variant for 16 px |
 | Base | Arch Linux, ISO built with archiso |
 | Compositor | Hyprland, with a Sway fallback config for GPUs where Hyprland misbehaves |
 | Desktop shell | Quickshell (QML): custom shapes (chamfers, gauges, graphs), built-in Hyprland/PipeWire/UPower/tray/notification support, hot reload |

@@ -235,8 +235,8 @@ separate SD-image builder after phase 9, see `docs/DECISIONS.md`). Full rational
 - The host is Zorin OS (not Arch). It has Docker but no QEMU/OVMF yet (`make run` needs
   `sudo apt install qemu-system-x86 ovmf`). Disk is tight (~25 GB free).
 
-**Open items waiting on me:**
-- Pick a logo concept in `docs/LOGO.md` (A "Null cell" is recommended) before phase 4 draws it.
+**Logo chosen (2026-10-13):** concept B, "Dead pixel lattice" (`docs/LOGO.md`). Phase 4 draws
+it as generated SVG plus a simplified small-size variant; the moving hole animates in Plymouth.
 
 **Phase 2 delivered:**
 - `tools/nullgrid/`: Python package (deps: jinja2, tomlkit). `schema.py` (own validator, dotted
