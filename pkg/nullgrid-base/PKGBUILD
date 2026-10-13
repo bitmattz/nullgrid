@@ -1,0 +1,16 @@
+# NULLGRID branding and release info. Installed on the live ISO and on installed systems.
+pkgname=nullgrid-base
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="NULLGRID OS base branding (os-release)"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=('filesystem')
+source=('os-release')
+sha256sums=('SKIP')
+
+package() {
+  # /etc/os-release takes precedence over /usr/lib/os-release (owned by filesystem).
+  install -Dm644 os-release "$pkgdir/etc/os-release"
+}

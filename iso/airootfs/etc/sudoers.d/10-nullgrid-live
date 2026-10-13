@@ -1,0 +1,2 @@
+# Live ISO only: the operator may run anything without a password.
+nullgrid ALL=(ALL:ALL) NOPASSWD: ALL

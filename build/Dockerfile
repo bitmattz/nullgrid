@@ -1,0 +1,15 @@
+# Arch Linux build environment for NULLGRID.
+# The host may be any distro with Docker; mkarchiso and makepkg run in here.
+# It also carries QEMU + OVMF so `make test-boot` works on hosts without them.
+FROM archlinux:latest
+
+RUN pacman -Syu --noconfirm --needed \
+        archiso base-devel git sudo pacman-contrib python python-jinja \
+        qemu-base edk2-ovmf \
+    && pacman -Scc --noconfirm
+
+# makepkg refuses to run as root, so packages are built as this user.
+RUN useradd -m builder \
+    && echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+
+WORKDIR /src

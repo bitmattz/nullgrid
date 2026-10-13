@@ -1,0 +1,9 @@
+NAME="NULLGRID"
+PRETTY_NAME="NULLGRID OS"
+ID=nullgrid
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;94;242;242"
+HOME_URL="https://github.com/bitmattz/nullgrid"
+BUG_REPORT_URL="https://github.com/bitmattz/nullgrid/issues"
+LOGO=nullgrid

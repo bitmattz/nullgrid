@@ -1,0 +1,40 @@
+# NULLGRID live ISO package list (x86_64).
+# Every package carries a reason on the comment line above it.
+# (mkarchiso keeps trailing spaces from inline comments, so don't put comments after a name.)
+# Grouped by purpose; keep it minimal.
+
+## Base system
+# Arch base: glibc, systemd, pacman, coreutils...
+base
+# kernel
+linux
+# firmware for real hardware (wifi, GPUs) - old laptops need it
+linux-firmware
+# CPU microcode updates (Intel)
+intel-ucode
+# CPU microcode updates (AMD)
+amd-ucode
+# initramfs generator
+mkinitcpio
+# live-boot hooks for the initramfs
+mkinitcpio-archiso
+# BIOS bootloader for the ISO
+syslinux
+
+## Live session basics
+# live user runs admin commands without a root login
+sudo
+# default shell (themed in phase 3)
+zsh
+# pager for man pages and logs
+less
+# simple editor until neovim lands in phase 3
+nano
+
+## Networking
+# wired + wifi, nmcli/nmtui; later read by the status bar
+networkmanager
+
+## NULLGRID (built from pkg/ into the local [nullgrid] repo)
+# branding: os-release, release info
+nullgrid-base
