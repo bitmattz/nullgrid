@@ -108,7 +108,8 @@ _ng_session() {
     nullgrid-session
     case $? in
       0) print -P "%F{$NULLGRID_ANSI_DIM}left the desktop; run nullgrid-session to start it again%f"; return ;;
-      1) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop could not start (logs: ~/.local/state/nullgrid/session-*.log); starting TTY mode%f" ;;
+      1) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop could not start; starting TTY mode. Details: nullgrid doctor%f"
+         read -s -k 1 -t 10 "?press a key (or wait 10 s)" ;;
       *) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop stopped with an error (logs: ~/.local/state/nullgrid/session-*.log)%f"; return ;;
     esac
   fi

@@ -307,6 +307,10 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - The builder needs `qemu-hw-display-virtio-vga`/`-virtio-gpu` for the boot test screen.
 - virtio-gpu without virgl still has `/dev/dri/renderD128`; Mesa falls back to llvmpipe itself.
 - `kitty --hold` drops into a shell (which runs the fastfetch greeting); use `nullgrid keys --pause`.
+- VirtualBox: Hyprland needs "Enable 3D Acceleration" (VMSVGA). Without it Hyprland gives up at
+  startup but exits 0, so nullgrid-session judges a start by time (<10 s = failed), not by status.
+- While the user's VirtualBox VM runs, KVM VMs on this host fail ("KVM: entry failed, hardware
+  error 0x0"); QEMU's `-vga vmware` crashes under KVM anyway. `run-vm.sh --vga=TYPE` tests adapters.
 - Fast VM debugging: a scratch harness that boots the ISO with serial + monitor and takes
   commands from files (see phase-4 session) beats re-running the whole boot test.
 

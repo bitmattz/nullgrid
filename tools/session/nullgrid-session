@@ -3,10 +3,14 @@
 # Start the NULLGRID desktop on this virtual terminal. The tty1 login runs it in desktop mode.
 #
 # Without an argument: Sway when [performance] profile = "lite", Hyprland otherwise. If the
-# compositor fails right away (it couldn't start, e.g. on an unsupported GPU), the other one is
-# tried. Exit status: 0 the desktop ran and was left; 1 no compositor could start (the login
+# compositor quits within 10 s it couldn't start (e.g. on an unsupported GPU), and the next one is
+# tried. That goes by time, not exit status: Hyprland reports success even when it gave up at
+# startup (seen in VirtualBox). Exit status: 0 the desktop ran and was left; 1 no compositor could start (the login
 # shell then falls back to TTY mode); anything else, the desktop crashed after running.
-# Compositor output: ~/.local/state/nullgrid/session-<name>.log
+# Last resort before giving up: Sway drawing in pure software (pixman), which needs no working
+# GPU driver at all (e.g. VirtualBox without 3D acceleration).
+# Compositor output: ~/.local/state/nullgrid/session-<name>.log. What happened at the last start
+# is in session-status (`nullgrid doctor` reports it).
 set -u
 
 state=${XDG_STATE_HOME:-$HOME/.local/state}/nullgrid
@@ -33,7 +37,8 @@ unset STARSHIP_CONFIG YAZI_CONFIG_HOME
 
 case ${1:-} in
     hyprland|sway) order=$1 ;;
-    "") if [ "${NULLGRID_LITE:-0}" = 1 ]; then order="sway hyprland"; else order="hyprland sway"; fi ;;
+    "") if [ "${NULLGRID_LITE:-0}" = 1 ]; then order="sway hyprland"; else order="hyprland sway"; fi
+        [ "${WLR_RENDERER:-}" = pixman ] || order="$order sway-software" ;;
     *) echo "usage: nullgrid-session [hyprland|sway]" >&2; exit 2 ;;
 esac
 
@@ -48,19 +53,29 @@ start() {
             unsupported=""
             [ -d /sys/module/nvidia ] && unsupported=--unsupported-gpu
             XDG_CURRENT_DESKTOP=sway XDG_SESSION_DESKTOP=sway sway $unsupported ;;
+        sway-software)
+            (export WLR_RENDERER=pixman WLR_NO_HARDWARE_CURSORS=1; start sway) ;;
     esac
 }
+
+status_file=$state/session-status
+: >"$status_file"
+note() { echo "nullgrid-session: $*" >&2; echo "$(date '+%F %T') $*" >>"$status_file"; }
 
 for name in $order; do
     log=$state/session-$name.log
     began=$(date +%s)
     start "$name" >"$log" 2>&1
     status=$?
-    [ "$status" -eq 0 ] && exit 0
-    if [ $(( $(date +%s) - began )) -ge 15 ]; then
-        echo "nullgrid-session: $name stopped with status $status (log: $log)" >&2
+    if [ $(( $(date +%s) - began )) -ge 10 ]; then
+        if [ "$status" -eq 0 ]; then
+            note "$name ran and was left normally"
+            exit 0
+        fi
+        note "$name stopped with status $status (log: $log)"
         [ "$status" -eq 1 ] && exit 3 || exit "$status"
     fi
-    echo "nullgrid-session: $name could not start (status $status, log: $log)" >&2
+    note "$name could not start (quit after $(( $(date +%s) - began )) s with status $status, log: $log)"
 done
+note "no compositor could start; fell back to TTY mode"
 exit 1

@@ -99,9 +99,16 @@ The animated layer (moving matrix columns) comes with the Quickshell overlay in 
 
 `nullgrid-session [hyprland|sway]` starts the desktop on the current VT. tty1 runs it at login
 in desktop mode. Without an argument, it picks Hyprland, or Sway for the lite profile. If the
-compositor fails right away (for example on a GPU Hyprland doesn't support), it tries the other
-one. If neither starts, the login falls back to TTY mode (the dashboard). Logs:
-`~/.local/state/nullgrid/session-<name>.log`.
+compositor quits within 10 seconds (for example on a GPU Hyprland doesn't support), it tries the
+other one, and as a last resort Sway with pure software rendering. If nothing starts, the login
+falls back to TTY mode (the dashboard). `nullgrid doctor` shows what happened at the last start;
+the compositors' output is in `~/.local/state/nullgrid/session-<name>.log`.
+
+### In VirtualBox
+
+Use the VMSVGA graphics controller with "Enable 3D Acceleration" on and 128 MB video memory,
+and give the VM at least 4 GB of RAM. Without 3D, Hyprland may not start there and the session
+falls back to Sway.
 
 Sway is the plain variant. It has no blur, glow, gradients or animations, and a solid neon
 border marks the active window. On NVIDIA's proprietary driver it starts with `--unsupported-gpu`.

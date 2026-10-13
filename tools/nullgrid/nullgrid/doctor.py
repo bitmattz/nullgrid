@@ -114,6 +114,14 @@ def run(paths: Paths) -> list[Check]:
         if missing := [n for n in needs if n not in text]:
             add(WARN, f"{f} doesn't load {' or '.join(missing)}: theme and keybind changes won't reach {app}"
                       f" (compare with {paths.skel / '.config' / main})")
+    status = paths.state_dir / "session-status"
+    if status.is_file():
+        lines = status.read_text(errors="replace").splitlines()
+        failed = [l for l in lines if "could not start" in l or "stopped with" in l or "fell back" in l]
+        for line in failed:
+            add(WARN, f"last desktop start: {line}")
+        if lines and not failed:
+            add(OK, f"last desktop start: {lines[-1]}")
     if shutil.which("Hyprland") or shutil.which("sway"):
         for tool, pkg in (("swaybg", "swaybg"), ("rsvg-convert", "librsvg")):
             if not shutil.which(tool):

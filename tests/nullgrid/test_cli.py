@@ -103,6 +103,15 @@ def test_doctor_checks_the_compositor_configs(run, paths, monkeypatch):
     assert "doesn't load nullgrid-theme.lua or nullgrid-keys.lua: theme and keybind changes won't reach Hyprland" in out
 
 
+def test_doctor_reports_a_failed_desktop_start(run, paths):
+    paths.state_dir.mkdir(parents=True)
+    (paths.state_dir / "session-status").write_text(
+        "2026-10-13 10:00:00 hyprland could not start (status 1, log: x)\n"
+        "2026-10-13 10:00:02 sway ran and was left normally\n")
+    code, out, _ = run("doctor")
+    assert code == 0 and "last desktop start: 2026-10-13 10:00:00 hyprland could not start" in out
+
+
 def test_doctor_flags_low_contrast(run, paths):
     write_config(paths, '[theme.colors]\ntext = "#222222"\n')
     code, out, _ = run("doctor")

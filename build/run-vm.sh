@@ -7,15 +7,18 @@
 #               and expose the QEMU monitor on a unix socket. The boot test takes screenshots of
 #               tty1 and types into it through it.
 #     --gl      virtio-gpu with host OpenGL (virgl), needed for smooth Hyprland
+#     --vga=TYPE  another QEMU display adapter instead of virtio-gpu, to test other drivers:
+#               vmware (vmwgfx, like VirtualBox's VMSVGA), std (bochs), qxl
 # Env: MEM (default 4G), CPUS (default 2)
 set -euo pipefail
 
-uefi=1 serial=0 gl=0 iso="" monitor=""
+uefi=1 serial=0 gl=0 iso="" monitor="" vga=""
 for arg in "$@"; do
     case "$arg" in
         --bios) uefi=0 ;;
         --serial) serial=1 ;;
         --gl) gl=1 ;;
+        --vga=*) vga=${arg#--vga=} ;;
         --monitor=*) monitor=${arg#--monitor=} ;;
         -*) echo "unknown option: $arg" >&2; exit 2 ;;
         *) iso="$arg" ;;
@@ -61,14 +64,16 @@ if (( uefi )); then
 fi
 
 if (( serial )) && [[ -n "$monitor" ]]; then
-    args+=(-display none -vga none -device virtio-vga,xres=1600,yres=900
+    if [[ -n "$vga" ]]; then display=(-vga "$vga"); else display=(-vga none -device virtio-vga,xres=1600,yres=900); fi
+    args+=(-display none "${display[@]}"
            -serial stdio -monitor "unix:$monitor,server,nowait")
 elif (( serial )); then
     args+=(-display none -vga none -serial stdio -monitor none)
 elif (( gl )); then
     args+=(-device virtio-vga-gl -display gtk,gl=on -serial mon:vc)
 else
-    args+=(-device virtio-vga -display gtk -serial mon:vc)
+    if [[ -n "$vga" ]]; then args+=(-vga "$vga"); else args+=(-device virtio-vga); fi
+    args+=(-display gtk -serial mon:vc)
 fi
 
 exec qemu-system-x86_64 "${args[@]}"

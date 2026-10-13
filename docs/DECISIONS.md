@@ -138,9 +138,12 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   them can drift. Duplicate combos are errors. User sets live in `~/.config/nullgrid/keybinds/`,
   the same way themes do. `behavior.keybinds` is a set name, not a path.
 - **Session start: tty1 login → `nullgrid-session`.** No display manager on the live ISO
-  (auto-login was agreed). The script picks Hyprland, or Sway for the `lite` profile. When the
-  compositor fails within 15 s it tries the other one. Exit status 1 (nothing started) makes the
-  login fall back to the TTY dashboard. Hyprland goes through `start-hyprland` (its watchdog
+  (auto-login was agreed). The script picks Hyprland, or Sway for the `lite` profile. A compositor
+  that quits within 10 s counts as a failed start, whatever its exit status: in VirtualBox
+  Hyprland gives up at startup and still exits 0. The next one is tried, ending with Sway on
+  pure software rendering (pixman), which needs no working GPU driver. Exit status 1 (nothing
+  started) makes the login fall back to the TTY dashboard. Each start is logged to
+  `~/.local/state/nullgrid/session-status`, and `nullgrid doctor` reports failures. Hyprland goes through `start-hyprland` (its watchdog
   wrapper, recommended since 0.53). On NVIDIA's proprietary driver Sway gets `--unsupported-gpu`.
   Leaving the desktop drops back to the tty1 shell rather than logging out.
 - **Wallpaper: procedural SVG, rendered per screen size.** `nullgrid/wallpaper.py` draws every
