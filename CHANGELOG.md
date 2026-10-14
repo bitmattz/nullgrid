@@ -5,8 +5,8 @@ the version lives in `VERSION` and every NULLGRID package carries it.
 
 ## 1.1.0 (2026-10-14)
 
-Delivered through the new update repository (no new ISO yet). Systems installed from 1.0.0:
-see [docs/UPDATING.md](docs/UPDATING.md) for the one-time setup.
+Release notes: [docs/releases/v1.1.0.md](docs/releases/v1.1.0.md) (ISO + update repository).
+Systems installed from 1.0.0: see [docs/UPDATING.md](docs/UPDATING.md) for the one-time setup.
 
 - **Updates through pacman.** A signed `[nullgrid]` repository (hosted as the `repo` GitHub
   release); the `nullgrid-keyring` package trusts its key and adds it to `/etc/pacman.conf`.

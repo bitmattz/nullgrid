@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-14: v1.1.0 in the update repository (v1.0.0 = latest ISO release); next: Raspberry Pi image builder
+### Status as of 2026-10-14: v1.1.0 RELEASED (ISO + update repository); next: Raspberry Pi image builder
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
