@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-14: Phase 9 DONE (all build phases); next: Raspberry Pi image builder
+### Status as of 2026-10-14: v1.0.0 RELEASED (all build phases); next: Raspberry Pi image builder
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -477,7 +477,7 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
   (compositor, shell, wallpaper, sound, audio, terminal, ...), start times, leaves itself out.
 - `make perf` (`tests/perf_smoke.py`, `PERF_ARGS`): ISO in a 4 GB VM without 3D, Hyprland then
   Sway lite, 90 s settle + 60 s window -> `out/perf/report.{md,json}`; budget Hyprland < 750 MiB,
-  lite < 700 MiB, shell/wallpaper/sound < 2% CPU. Result: Hyprland 722-738 MiB, lite 585-608 MiB (boot-to-boot variance), shell
+  lite < 700 MiB, shell/wallpaper/sound < 2% CPU. Result: Hyprland 718-738 MiB, lite 585-608 MiB (boot-to-boot variance), shell
   0.2%, compositor 2.1%; shell up 14.7 s after boot. User accepted 722 as meeting "~700" (VM =
   worst case, software rendering). Docs: `docs/PERFORMANCE.md`, phase-9 section in DECISIONS.
 - Fixes: THP `madvise` (`nullgrid-base` tmpfiles, -150 MiB); NULLGRID_SOFTWARE_RENDER: widgets
@@ -496,6 +496,14 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
   isn't found by `-c`.
 - For digging into a running VM: `tests/probe_vm.py` boots once and runs commands written to
   `out/probe/cmd-NN.sh` (output in `out-NN.txt`); usage in its docstring.
+
+**Release 1.0.0 (2026-10-14):** `VERSION` file = single source (packages, tools, os-release;
+`tests/nullgrid/test_versions.py`), ISO `nullgrid-<VERSION>-x86_64.iso`. GitHub release `v1.0.0`
+with the ISO + SHA256SUMS; notes `docs/releases/v1.0.0.md`, `CHANGELOG.md`, procedure
+`docs/RELEASING.md`. `gh` is in `~/.local/bin` (logged in as bitmattz). Release QA all PASS:
+test, test-shell, test-boot, test-install, perf (Hyprland 718 MiB, lite 602 MiB).
+Deferred by the owner: a signed `[nullgrid]` pacman repo for updates (design in DECISIONS.md).
+Package check() tarballs need `VERSION` and `pkg/` (build-packages.sh).
 
 **Next (after phase 9):** the Raspberry Pi SD-image builder (`docs/DECISIONS.md`, light hardware
 strategy). Ideas not done: measure on a real GPU / with virgl; Xwayland on demand.

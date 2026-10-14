@@ -445,13 +445,29 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 - **Live ISO autologin `Type=simple`:** systemd's `Type=idle` gettys wait up to 5 s for other
   boot jobs; `pacman-init` (keyring) runs ~9 s at every live boot.
 - **The memory budget, agreed with the project owner:** the GPU-less VM's Hyprland desktop idles
-  at 722-738 MiB, the lite session at 585-608 MiB (two fresh boots). Accepted as meeting "~700 MB": the VM is the worst
+  at 718-738 MiB, the lite session at 585-608 MiB (two fresh boots). Accepted as meeting "~700 MB": the VM is the worst
   case (software rendering). `make perf` checks < 750 MiB for Hyprland there, < 700 for lite.
   Not done: dropping the login terminal without a GPU (−110 MiB, but it's part of the look).
 - Tried and dropped (no effect): `MALLOC_ARENA_MAX=2`, `LP_NUM_THREADS=1`.
 - Fix: `nullgrid-shell restart` also stops a shell started from the other config location
   (system vs. a user copy made since).
 - All packages 0.9.0 except fonts (`nullgrid-base` 0.9.0 now carries the memory setting).
+
+## Release 1.0.0 and updates
+
+- **Version in one place:** `VERSION` (1.0.0). Packages, tools and os-release must match (a test
+  checks); the ISO is named `nullgrid-<VERSION>-x86_64.iso`. How to cut a release: RELEASING.md.
+- **Published as a GitHub release with the ISO attached** (+ `SHA256SUMS`), notes in
+  `docs/releases/v1.0.0.md`.
+- **Updates of NULLGRID's own packages: deferred** (project owner's call, 2026-10-14). Installed
+  systems get Arch updates through pacman, NULLGRID components only through a new ISO. The design
+  for later: a signed `[nullgrid]` pacman repository hosted on a permanent `repo` GitHub release
+  (`Server = https://github.com/bitmattz/nullgrid/releases/download/repo`), a dedicated signing key
+  with its public half in a `nullgrid-keyring` package, `make publish-repo` (build, sign,
+  `repo-add`, upload), a pacman hook so each user's generated configs regenerate at their next
+  login, `nullgrid update` (pacman -Syu + regenerate + doctor), and a scheduled CI boot test
+  against current Arch. Systems installed from 1.0.0 will need a one-time step to add the repo
+  and key.
 
 ## Light hardware strategy (from the target-hardware answer)
 

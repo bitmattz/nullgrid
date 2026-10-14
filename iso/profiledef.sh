@@ -6,7 +6,8 @@ iso_name="nullgrid"
 iso_label="NULLGRID_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
 iso_publisher="NULLGRID <https://github.com/bitmattz/nullgrid>"
 iso_application="NULLGRID Live"
-iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
+# the release version (VERSION at the repo root); the ISO is out/nullgrid-<version>-x86_64.iso
+iso_version="$(cat "$(dirname "${BASH_SOURCE[0]}")/../VERSION")"
 install_dir="nullgrid"
 bootmodes=('bios.syslinux'
            'uefi.systemd-boot')

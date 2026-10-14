@@ -4,7 +4,7 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 9 (polish & performance)**, all build phases done. The ISO boots through an
+> Status: **1.0.0**, the first release (all nine build phases done). The ISO boots through an
 > animated Plymouth splash into a Hyprland desktop (Sway as fallback and lite session) with the
 > NULLGRID shell: status bar, dock, HUD widgets, start menu, notifications and a HUD lock screen,
 > over a generated wallpaper, with synthesized UI sounds on PipeWire. GTK and Qt apps, the icon
@@ -33,6 +33,15 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software ren
 | **Boot splash** (Plymouth): the dead pixel wanders the lattice, a fake boot log scrolls | **Greeter** (installed systems): tuigreet over matrix rain; F3 picks desktop or terminal mode |
 | ![First-run wizard](docs/screenshots/first-boot-welcome.png) | |
 | **First boot** of an installed system (`make test-install`): theme, sound pack, mode | |
+
+## Download
+
+The latest release, with the ISO and its checksum, is on the
+[releases page](https://github.com/bitmattz/nullgrid/releases). Write it to a USB stick or boot
+it in a VM (4 GB RAM; with 3D acceleration if you can), turn off Secure Boot, and it comes up
+in the live desktop (password `nullgrid`). Install from the start menu or with
+`sudo nullgrid-install`. What's in 1.0.0 and its known limitations:
+[docs/releases/v1.0.0.md](docs/releases/v1.0.0.md); history in [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick start
 
@@ -75,6 +84,7 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [BOOT.md](docs/BOOT.md): boot splash, greeter, console colors
 - [INSTALL.md](docs/INSTALL.md): installing to a disk, GPU drivers, first-run wizard
 - [PERFORMANCE.md](docs/PERFORMANCE.md): idle memory/CPU, boot time, how to measure
+- [RELEASING.md](docs/RELEASING.md): how a release is cut; [CHANGELOG.md](CHANGELOG.md)
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo

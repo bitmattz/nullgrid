@@ -17,7 +17,7 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 |---|---|
 | `make builder` | builds the `nullgrid-builder` Docker image (Arch + archiso + QEMU) |
 | `make repo` | builds every `pkg/*/PKGBUILD` into the local pacman repo `out/repo/` |
-| `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
+| `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-<VERSION>-x86_64.iso` (the version is in `VERSION`) |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (smoother desktop; without it Mesa renders in software) |
 | `make test` | unit + snapshot tests of `nullgrid`, `nullgrid-sfx` (incl. the generated sounds), `nullgrid-dash` and the installer (the whole install plan against a fake system, the TUI and the first-run wizard through Textual's pilot), in the builder container |
 | `make sounds` | synthesizes the sound packs into `out/sounds/` (`nullgrid sound test` in a checkout plays them); the `nullgrid-sfx` package does the same at build time |

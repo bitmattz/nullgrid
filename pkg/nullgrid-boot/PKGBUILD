@@ -2,7 +2,7 @@
 # palette. The splash images are drawn at build time by plymouth/generate.py (crimson-hud colors:
 # the splash and the greeter show before any user theme applies).
 pkgname=nullgrid-boot
-pkgver=0.9.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="NULLGRID boot splash, greeter and console colors"
 arch=('any')

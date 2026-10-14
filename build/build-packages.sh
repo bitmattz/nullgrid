@@ -24,7 +24,7 @@ pacman -Sy --noconfirm >/dev/null
 # The repo code (not only pkg/<name>) goes into each build dir as a source tarball.
 tarball=$(mktemp --suffix=.tar)
 tar -C "$src" -cf "$tarball" --exclude=__pycache__ --exclude=.pytest_cache \
-    tools themes config assets shell plymouth tests/nullgrid tests/nullgrid_dash tests/nullgrid_sfx tests/nullgrid_install iso/airootfs
+    tools themes config assets shell plymouth tests/nullgrid tests/nullgrid_dash tests/nullgrid_sfx tests/nullgrid_install iso/airootfs VERSION pkg
 
 names=("${order[@]}")
 for dir in "$src"/pkg/*/; do

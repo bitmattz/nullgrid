@@ -35,7 +35,7 @@ less memory and the compositor less CPU.
 
 | Idle desktop | Memory used | Compositor CPU | Shell (widgets) CPU | Wallpaper / sound CPU |
 |---|---:|---:|---:|---:|
-| Hyprland (default) | 722-738 MiB | 2.1% | 0.20% | 0% / 0% |
+| Hyprland (default) | 718-738 MiB | 2.1% | 0.20% | 0% / 0% |
 | Sway (`[performance] profile = "lite"`) | 585-608 MiB | 0.17% | 0.12-0.15% | 0% / 0% |
 
 (Two fresh boots of the same ISO; memory varies by ~20 MiB from boot to boot.)

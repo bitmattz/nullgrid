@@ -1,5 +1,5 @@
 # NULLGRID build entry points. Everything Arch-specific runs in the builder container.
-#   make iso        build out/nullgrid-YYYY.MM.DD-x86_64.iso
+#   make iso        build out/nullgrid-<VERSION>-x86_64.iso
 #   make run        boot it in QEMU (UEFI). Variants: run-bios, run-gl
 #   make test       unit + snapshot tests of nullgrid, nullgrid-sfx, nullgrid-dash, the installer (in Docker)
 #   make sounds     generate the sound packs into out/sounds (nullgrid sound test plays them)
