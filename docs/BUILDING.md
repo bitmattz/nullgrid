@@ -21,12 +21,15 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (smoother desktop; without it Mesa renders in software) |
 | `make test` | unit + snapshot tests of `nullgrid`, `nullgrid-sfx` (incl. the generated sounds) and `nullgrid-dash`, in the builder container |
 | `make sounds` | synthesizes the sound packs into `out/sounds/` (`nullgrid sound test` in a checkout plays them); the `nullgrid-sfx` package does the same at build time |
-| `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu, a live theme switch, and the sound daemon (a stand-in `pw-play` logs which sounds the shell, Sway and `nullgrid sound mute` cause), and saves screenshots to `out/screens/shell-*.png` |
+| `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu, a live theme switch, and the sound daemon (a stand-in `pw-play` logs which sounds the shell, Sway and `nullgrid sound mute` cause). Then opens Thunar (GTK 3), zathura (GTK 4) and a Qt window, checks by their pixels that they take the theme's colors and follow a theme switch live, and that the GTK theme parses cleanly. Screenshots go to `out/screens/shell-*.png` |
+| `make splash` | builds the Plymouth theme and runs it with Plymouth's X11 renderer in a virtual X server: `out/screens/splash-*.png` (boot, password prompt, shutdown); fails on script errors |
 | `make test-boot` / `test-boot-bios` | headless boot in Docker: logs in over serial and checks systemd state, branding, sudo, NetworkManager, that `nullgrid` can switch themes and passes `doctor`, and that the terminal apps load their generated configs. Then it checks the desktop on tty1:
 Hyprland (config valid, wallpaper up, a live theme switch, the keybind popup and launcher,
 PipeWire and the sound daemon: the VM's sound card is recorded to a WAV file to prove a test
-sound comes out; the volume key), Sway via the lite profile, and TTY mode (the dashboard).
-Screenshots of each go to `out/screens/` |
+sound comes out; the volume key; GTK settings, icons, cursor and Qt environment; Thunar and
+Firefox across a theme switch), Sway via the lite profile, TTY mode (the dashboard), and the
+greeter (greetd on tty3: logs in and picks TTY mode). Screen grabs during boot must show the
+Plymouth splash (`out/screens/boot-splash.png`). Screenshots of each go to `out/screens/` |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 
@@ -47,7 +50,8 @@ PipeWire (`AUDIO=none make run` mutes it, `AUDIO=alsa` picks another QEMU audio 
 
 The ISO is a standard hybrid image. It boots in VirtualBox, virt-manager or VMware (UEFI or BIOS),
 or from a USB stick (`dd if=out/nullgrid-*.iso of=/dev/sdX bs=4M status=progress oflag=sync`).
-The live user is `nullgrid` with passwordless sudo.
+The live user is `nullgrid` (password `nullgrid`) with passwordless sudo. The boot menu's second
+entry shows boot messages instead of the splash.
 
 ## Working on the `nullgrid` tool without building an ISO
 

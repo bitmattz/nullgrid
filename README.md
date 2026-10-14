@@ -4,12 +4,13 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 6 (sound)**. The ISO boots into a Hyprland desktop (Sway as fallback and
-> lite session) with the NULLGRID shell: status bar, dock, HUD widgets, start menu, notifications
-> and a HUD lock screen, over a generated wallpaper, with synthesized UI sounds on PipeWire.
-> TTY mode gives a themed dashboard instead. Everything, down to zsh, kitty and neovim, is styled
-> from one TOML file by the `nullgrid` tool. GTK/Qt theming, the boot splash and the installer
-> come in later phases (see `CLAUDE.md` section 9).
+> Status: **phase 7 (full visual coverage)**. The ISO boots through an animated Plymouth splash
+> into a Hyprland desktop (Sway as fallback and lite session) with the NULLGRID shell: status bar,
+> dock, HUD widgets, start menu, notifications and a HUD lock screen, over a generated wallpaper,
+> with synthesized UI sounds on PipeWire. GTK and Qt apps (Firefox, Thunar, zathura...), the icon
+> theme and the mouse pointer follow the theme too, live. TTY mode gives a themed dashboard
+> instead, and installed systems get a matching text greeter. Everything is styled from one TOML
+> file by the `nullgrid` tool. The installer comes next (see `CLAUDE.md` section 9).
 
 ## Screenshots
 
@@ -25,6 +26,10 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software ren
 | **`SUPER+/`**: the keybinds, from the same file Hyprland and Sway use | **Sway**: the fallback and `lite` session, same shell |
 | ![TTY dashboard](docs/screenshots/tty1-dashboard.png) | ![Wallpaper, ice-protocol](docs/screenshots/wallpaper-ice-protocol.png) |
 | **TTY mode**: the dashboard on the Linux console | **The wallpaper** alone (ice-protocol): circuit traces, logo plate, keymap, data blocks, all generated |
+| ![GUI apps](docs/screenshots/desktop-hyprland-apps.png) | ![GUI apps after a theme switch](docs/screenshots/desktop-hyprland-apps-toxic-grid.png) |
+| **GUI apps**: Firefox and Thunar in the NULLGRID GTK theme and icons | **The same apps** after `nullgrid theme set toxic-grid`, restyled while running |
+| ![Boot splash](docs/screenshots/boot-splash.png) | ![Greeter](docs/screenshots/greeter.png) |
+| **Boot splash** (Plymouth): the dead pixel wanders the lattice, a fake boot log scrolls | **Greeter** (installed systems): tuigreet over matrix rain; F3 picks desktop or terminal mode |
 
 ## Quick start
 
@@ -33,7 +38,8 @@ make iso         # build out/nullgrid-*.iso inside Docker (any Linux host)
 make run         # boot it in QEMU (UEFI); needs qemu + OVMF on the host
 make test        # unit + snapshot tests of the nullgrid tool and the sound daemon (Docker)
 make sounds      # synthesize the sound packs into out/sounds (Docker)
-make test-shell  # the desktop shell in a headless Sway: QML errors, IPC, screenshots (Docker)
+make test-shell  # the shell + GTK/Qt apps in a headless Sway: QML errors, live restyle (Docker)
+make splash      # preview the Plymouth boot splash (Docker) -> out/screens/splash-*.png
 make test-boot   # headless boot test; needs only Docker
 ```
 
@@ -42,6 +48,7 @@ nullgrid theme list               # crimson-hud, ice-protocol, toxic-grid
 nullgrid theme set ice-protocol   # restyle everything live
 nullgrid keys                     # the desktop keybinds (SUPER+/ shows them too)
 nullgrid sound test all           # hear the active sound pack; sound set minimal-ops, sound mute
+nullgrid toolkit apply            # GTK settings, icons and pointer (theme set does it for you)
 nullgrid mode tty                 # log in to the TTY dashboard instead of the desktop
 nullgrid doctor                   # check config and generated files
 ```
@@ -55,6 +62,8 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [DESKTOP.md](docs/DESKTOP.md): the desktop session, keybinds, wallpaper
 - [TERMINAL.md](docs/TERMINAL.md): shell, apps, TTY mode and the dashboard
 - [SOUND.md](docs/SOUND.md): UI sounds, events, sound packs
+- [TOOLKITS.md](docs/TOOLKITS.md): GTK and Qt apps, icons, cursors
+- [BOOT.md](docs/BOOT.md): boot splash, greeter, console colors
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo

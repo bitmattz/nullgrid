@@ -191,6 +191,25 @@ def test_catches_reads_the_signal_mask():
     assert not render._catches(999_999_999, signal.SIGUSR1)
 
 
+def test_catches_blocked_signals():
+    """kitty doesn't install a handler: it blocks SIGUSR1 and reads it from a signalfd."""
+    import signal
+    import subprocess
+    import sys
+    code = ("import signal, sys, time; signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGUSR1}); "
+            "print(1, flush=True); time.sleep(30)")
+    proc = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE)
+    try:
+        proc.stdout.readline()
+        assert render._catches(proc.pid, signal.SIGUSR1)
+        assert not render._catches(proc.pid, signal.SIGUSR2)
+        proc.send_signal(signal.SIGUSR1)  # stays pending: the process lives on
+        assert proc.poll() is None
+    finally:
+        proc.kill()
+        proc.wait()
+
+
 def test_reload_only_changed(paths, monkeypatch):
     calls = []
     monkeypatch.setattr(render, "run_reload", lambda t: calls.append(t.name) or True)

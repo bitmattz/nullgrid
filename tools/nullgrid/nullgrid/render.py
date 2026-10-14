@@ -347,16 +347,19 @@ def _processes(name: str) -> list[int]:
 
 
 def _catches(pid: int, sig: int) -> bool:
-    """Whether the process has a handler for sig. A process still starting up (or one that
-    never handles it) would be killed by signals like SIGUSR1 or SIGHUP, so it's skipped."""
+    """Whether the process handles sig: with a handler (SigCgt), or by blocking it and reading it
+    from a signalfd (SigBlk; kitty does this). A process still starting up has neither yet and
+    would be killed by signals like SIGUSR1 or SIGHUP, so it's skipped."""
+    masks = {}
     try:
         with open(f"/proc/{pid}/status") as fh:
             for line in fh:
-                if line.startswith("SigCgt:"):
-                    return bool(int(line.split()[1], 16) >> (sig - 1) & 1)
+                if line.startswith(("SigCgt:", "SigBlk:")):
+                    masks[line[:6]] = int(line.split()[1], 16)
     except (OSError, ValueError):
-        pass
-    return False
+        return False
+    bit = 1 << (sig - 1)
+    return bool((masks.get("SigCgt", 0) | masks.get("SigBlk", 0)) & bit)
 
 
 def _env_matches(spec: str) -> bool:

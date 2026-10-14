@@ -39,7 +39,7 @@ silently do nothing.
 | `[theme.colors]` | | override any palette color of the preset (see below) |
 | `[theme.colors.terminal]` | | override terminal colors |
 | `[theme.fonts]` | | `ui`, `mono`, `display` (font family names), `size`, `mono_size` (pt) |
-| `[theme.style]` | | `border_width` (0-8), `glow` (0-1), `corners` (`sharp`/`chamfer`/`round`), `surface_opacity`, `terminal_opacity` (0.3-1), `blur` (bool), `gaps` (px) |
+| `[theme.style]` | | `border_width` (0-8), `glow` (0-1), `corners` (`sharp`/`chamfer`/`round`), `surface_opacity`, `terminal_opacity` (0.3-1), `blur` (bool), `gaps` (px), `cursor_size` (px, 16-96) |
 
 Overrides apply on top of whatever preset is active, also after `theme set`. `doctor -v` lists them.
 
@@ -109,8 +109,10 @@ selection color0`..`color15`). `[fonts]` and `[style]` are optional (defaults as
 | fuzzel | `~/.config/fuzzel/fuzzel.ini` | read at each launch |
 | btop | `~/.config/btop/themes/nullgrid.theme` | at next start |
 | nvim | `~/.config/nvim/lua/nullgrid/palette.lua` | at next start |
-| gtk | `~/.config/nullgrid/generated/gtk-colors.css` | phase 7 |
-| qt | `~/.config/qt6ct/colors/nullgrid.conf` | at next start |
+| toolkit | `~/.config/nullgrid/generated/toolkit.json` (input of `nullgrid toolkit apply`: icons, cursors, GTK settings) | yes |
+| gtk / gtk-dark / gtk4 | `~/.local/share/themes/NULLGRID/gtk-3.0/gtk.css`, `gtk-dark.css`, `gtk-4.0/gtk.css` | yes (`nullgrid toolkit apply --reload`) |
+| qt / qt-style / qt6ct | `~/.config/qt6ct/colors/nullgrid.conf`, `qss/nullgrid.qss`, `qt6ct.conf` | yes (qt6ct watches its directory) |
+| zathura | `~/.config/zathura/nullgrid-theme` | yes (over D-Bus) |
 | tty | `~/.config/nullgrid/generated/tty-palette.sh` | yes, when run on a console |
 | shell-env | `~/.config/nullgrid/generated/shell-env.sh` | next shell |
 | banner | `~/.config/nullgrid/generated/banner` | next login |
@@ -135,7 +137,7 @@ same name. To add an app, put a template there and a `manifest.toml` next to it:
 ```toml
 [foot]
 template = "foot.ini.j2"
-target = "{config_home}/foot/colors.ini"     # also {config_dir} = ~/.config/nullgrid, {home}
+target = "{config_home}/foot/colors.ini"     # also {config_dir} = ~/.config/nullgrid, {data_home}, {home}
 process = "foot"                             # optional reload hook: only if foot is running...
 signal = "USR1"                              # ...send it a signal, or
 # reload = ["some-cmd", "--reload", "{target}"]   ...run a command

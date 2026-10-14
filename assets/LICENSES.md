@@ -11,6 +11,13 @@ source and license. Original NULLGRID assets are MIT like the rest of the repo u
 | Lock screen layout | `config/skel/.config/hypr/hyprlock.conf` | original | MIT |
 | HUD wallpaper and decor | generated at runtime by `tools/nullgrid/nullgrid/wallpaper.py` | original, procedural | MIT |
 | Sound packs `neural-link`, `minimal-ops` | `/usr/share/nullgrid/sounds/` (synthesized at package build time by `assets/sounds/generate.py`; no samples) | original, procedural | MIT |
+| Icon theme NULLGRID (line icons) | generated per user by `tools/nullgrid/nullgrid/icons.py` from `glyphs.py` | original, procedural | MIT |
+| Cursor theme NULLGRID | generated per user by `tools/nullgrid/nullgrid/cursors.py` | original, procedural | MIT |
+| GTK theme NULLGRID (colors and rules) | generated from `config/templates/gtk*.j2` | original | MIT |
+| GTK base theme adw-gtk3 | Arch package `adw-gtk-theme`, imported (not bundled) by the generated theme | [lassekongo83/adw-gtk3](https://github.com/lassekongo83/adw-gtk3) | LGPL-2.1 |
+| Fallback icons (Adwaita, hicolor) | Arch packages `adwaita-icon-theme`, `hicolor-icon-theme` (inherited, not bundled) | GNOME, freedesktop.org | CC-BY-SA 3.0 / LGPL-3.0 (Adwaita) |
+| Plymouth boot splash (images and script) | `plymouth/` (images drawn at package build time by `generate.py`) | original | MIT |
+| Greeter look (tuigreet config) | `config/greetd/` | original configuration | MIT |
 | Rajdhani (UI font) | `/usr/share/fonts/nullgrid/` via `pkg/nullgrid-fonts` | Indian Type Foundry, [google/fonts](https://github.com/google/fonts/tree/main/ofl/rajdhani) | SIL OFL 1.1 |
 | Orbitron (display font) | `/usr/share/fonts/nullgrid/` via `pkg/nullgrid-fonts` | The League of Moveable Type, [google/fonts](https://github.com/google/fonts/tree/main/ofl/orbitron) | SIL OFL 1.1 (Reserved Font Name "Orbitron": shipped unmodified) |
 | JetBrains Mono (terminal font) | Arch package `ttf-jetbrains-mono` | JetBrains | SIL OFL 1.1 |

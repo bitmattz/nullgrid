@@ -17,6 +17,7 @@ defaults:
 | `SUPER+SPACE` | start menu |
 | `SUPER+D` | app launcher (fuzzel) |
 | `SUPER+E` | file manager (yazi) |
+| `SUPER+W` | web browser (Firefox) |
 | `` SUPER+` `` | system dashboard |
 | `SUPER+B` | btop |
 | `SUPER+/` | show keybinds |
@@ -63,7 +64,7 @@ workspace = "SUPER"             # modifiers only: + 1..9, 0
 launcher = []                   # unbound
 
 [exec]                          # extra binds: combo = command
-"SUPER+W" = "firefox"
+"SUPER+N" = "thunar"
 ```
 
 Combos are modifiers (`SUPER SHIFT CTRL ALT`) plus one xkb key name (`Return`, `Left`,

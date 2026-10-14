@@ -10,7 +10,7 @@ RUN pacman -Syu --noconfirm --needed \
         qemu-base qemu-hw-display-virtio-vga qemu-hw-display-virtio-gpu edk2-ovmf \
         quickshell sway swaybg grim librsvg hyprlock dbus libnotify ttf-jetbrains-mono \
         adw-gtk-theme adwaita-icon-theme qt6ct dconf gsettings-desktop-schemas thunar zathura \
-        zathura-pdf-mupdf greetd-tuigreet \
+        zathura-pdf-mupdf greetd-tuigreet plymouth xorg-server-xvfb xorg-xwd imagemagick \
     && pacman -Scc --noconfirm
 
 # makepkg refuses to run as root, so packages are built as this user.

@@ -3,7 +3,8 @@
 #   make run        boot it in QEMU (UEFI). Variants: run-bios, run-gl
 #   make test       unit + snapshot tests of nullgrid, nullgrid-sfx, nullgrid-dash (in Docker)
 #   make sounds     generate the sound packs into out/sounds (nullgrid sound test plays them)
-#   make test-shell the desktop shell in a headless Sway: QML errors, IPC, screenshots (Docker)
+#   make test-shell the desktop shell + GTK/Qt apps in a headless Sway: QML errors, IPC, live restyle
+#   make splash     preview the Plymouth boot splash (X11 renderer, Docker) -> out/screens/splash-*.png
 #   make test-boot  headless boot + checks over serial (runs in Docker; no host QEMU needed)
 
 BUILDER  ?= nullgrid-builder
@@ -13,7 +14,7 @@ DOCKER    = docker run --rm $(DOCKER_TTY) -e HOST_UID=$(shell id -u) -e HOST_GID
             -v $(CURDIR):/src -v $(WORKVOL):/work $(BUILDER)
 DOCKER_TTY = $(if $(shell [ -t 0 ] && echo y),-it,)
 
-.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell test-boot test-boot-bios shell check-host clean distclean
+.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell splash test-boot test-boot-bios shell check-host clean distclean
 
 help:
 	@sed -n 's/^#   //p' Makefile
@@ -51,6 +52,10 @@ sounds: builder
 test-shell: builder
 	docker run --rm $(DOCKER_TTY) -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
 		-v $(CURDIR):/src $(BUILDER) /src/tests/shell_smoke.sh
+
+splash: builder
+	docker run --rm -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) -v $(CURDIR):/src $(BUILDER) \
+		/src/tests/splash_preview.sh
 
 test-boot:
 	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \

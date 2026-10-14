@@ -3,12 +3,14 @@
 
 tty1 logs in by itself and starts the desktop. Through the QEMU monitor the test screenshots it,
 presses keys there and saves PNGs to out/screens/ for a human to look at, while the serial
-console checks the session: Hyprland, then Sway (the lite profile), then TTY mode (the dashboard).
-The VM's sound card records to a WAV file, so the test can tell that sounds really come out.
+console checks the session: Hyprland, then Sway (the lite profile), then TTY mode (the dashboard),
+then the greeter. The VM's sound card records to a WAV file, so the test can tell that sounds
+really come out; screen grabs during boot show whether the Plymouth splash came up.
 
 Usage: boot_smoke.py [--bios] [iso]   (normally via `make test-boot`)
 Env:   BOOT_TIMEOUT  seconds to wait for the shell prompt (default 600; TCG is slow)
 """
+import collections
 import os
 import re
 import socket
@@ -18,6 +20,7 @@ import tempfile
 import sys
 import threading
 import time
+import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOT_TIMEOUT = int(os.environ.get("BOOT_TIMEOUT", "600"))
@@ -47,18 +50,37 @@ CHECKS = [
      r"JetBrains Mono,Orbitron,Rajdhani,"),
     ("kitty +runpy 'from kitty.config import load_config; print(load_config(\"'$HOME'/.config/kitty/kitty.conf\").font_family)'",
      r"JetBrains Mono"),
+    # phase 7: boot splash, console colors, GTK/Qt/icon/cursor files
+    ("systemctl is-active nullgrid-console-palette", r"active"),
+    # the console's default palette is crimson-hud's (color 6 = #5ef2f2), not the VGA one
+    ("cut -d, -f7 /sys/module/vt/parameters/default_red", r"94"),
+    ("grep -x Theme=nullgrid /etc/plymouth/plymouthd.conf", r"Theme=nullgrid"),
+    ("ls ~/.local/share/themes/NULLGRID/gtk-3.0/gtk.css ~/.local/share/icons/NULLGRID/cursors/default"
+     " ~/.config/qt6ct/qt6ct.conf | wc -l", r"3"),
+    ("ls /usr/share/plymouth/themes/nullgrid/*.png | wc -l", r"[1-9]\d+"),
 ]
 # Phase 4: the desktop on tty1. ENV points this serial shell at the session's compositor.
 ENV = ("export XDG_RUNTIME_DIR=/run/user/$(id -u); "
        "export WAYLAND_DISPLAY=$(cd $XDG_RUNTIME_DIR && ls -d wayland-? | head -1); "
        "export HYPRLAND_INSTANCE_SIGNATURE=$(ls -t $XDG_RUNTIME_DIR/hypr 2>/dev/null | head -1); "
-       "export SWAYSOCK=$(ls $XDG_RUNTIME_DIR/sway-ipc.*.sock 2>/dev/null | head -1)")
+       "export SWAYSOCK=$(ls $XDG_RUNTIME_DIR/sway-ipc.*.sock 2>/dev/null | head -1); "
+       "export QT_QPA_PLATFORMTHEME=qt6ct")
 HYPRLAND_CHECKS = [
     ("Hyprland --verify-config -c ~/.config/hypr/hyprland.lua 2>&1 | tail -1", r"config ok"),
     ("hyprctl configerrors -j | tr -d ' \\t\\n'", r'\[(""|)\]'),
     ("hyprctl monitors | grep -o '1600x900'", r"1600x900"),
     ("pgrep -x swaybg >/dev/null && ls ~/.cache/nullgrid/wallpaper/ | grep -c 1600x900", r"[1-9]"),
     ("hyprctl binds | grep -c 'dispatcher'", r"[1-9]\d+"),
+]
+# Phase 7: GTK apps read their theme, icons, cursor and fonts from GSettings in the session
+TOOLKIT_CHECKS = [
+    ("gsettings get org.gnome.desktop.interface gtk-theme", r"'NULLGRID'"),
+    ("gsettings get org.gnome.desktop.interface icon-theme", r"'NULLGRID'"),
+    ("gsettings get org.gnome.desktop.interface cursor-theme", r"'NULLGRID'"),
+    # what apps started by Hyprland get (the welcome terminal is one)
+    ("tr '\\0' '\\n' < /proc/$(pgrep -x kitty | head -1)/environ | grep -E '^(XCURSOR_THEME|QT_QPA_PLATFORMTHEME)=' | sort | tr '\\n' ' '",
+     r"QT_QPA_PLATFORMTHEME=qt6ct XCURSOR_THEME=NULLGRID"),
+    ("nullgrid doctor | grep -E 'icon theme|GTK settings|QT_QPA|qt6ct' | grep -vc '^\\[ ok \\]'", r"0"),
 ]
 # Phase 6: PipeWire and the sound daemon in the Hyprland session (status JSON has sorted keys)
 SOUND_CHECKS = [
@@ -168,6 +190,76 @@ class Monitor:
             time.sleep(0.2)
 
 
+def read_ppm(path: str) -> tuple[int, int, bytes]:
+    data = open(path, "rb").read()
+    fields, pos = [], 2
+    while len(fields) < 3:
+        while data[pos:pos + 1].isspace():
+            pos += 1
+        start = pos
+        while not data[pos:pos + 1].isspace():
+            pos += 1
+        fields.append(int(data[start:pos]))
+    return fields[0], fields[1], data[pos + 1:]
+
+
+def write_png(path: str, w: int, h: int, rgb: bytes) -> None:
+    def chunk(kind, payload):
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+    raw = b"".join(b"\0" + rgb[y * w * 3:(y + 1) * w * 3] for y in range(h))
+    with open(path, "wb") as fh:
+        fh.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+                 + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
+
+
+class SplashWatch:
+    """Grabs the screen every second while the VM boots and keeps the frame that looks most like
+    the NULLGRID splash: crimson background with neon cyan (the logo) on it."""
+    BG, CYAN = (0x1a, 0x0b, 0x0f), (0x5e, 0xf2, 0xf2)
+
+    def __init__(self, mon: Monitor, tmp: str):
+        self.mon, self.tmp = mon, tmp
+        self.best: tuple[float, int, int, bytes] | None = None
+        self.stop = threading.Event()
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+
+    @staticmethod
+    def near(px, ref, tol=40):
+        return sum(abs(a - b) for a, b in zip(px, ref)) <= tol
+
+    def _run(self):
+        path = os.path.join(self.tmp, "frame.ppm")
+        while not self.stop.wait(1):
+            try:
+                self.mon.cmd(f"screendump {path}")
+                w, h, rgb = read_ppm(path)
+            except (OSError, ValueError, IndexError):
+                continue
+            px = [rgb[i:i + 3] for i in range(0, len(rgb) - 2, 3 * 7)]  # a sample
+            bg = sum(self.near(p, self.BG) for p in px) / max(1, len(px))
+            cyan = sum(self.near(p, self.CYAN, 60) for p in px) / max(1, len(px))
+            score = bg + (1 if cyan > 0.002 else 0)
+            if self.best is None or score > self.best[0]:
+                self.best = (score, w, h, rgb)
+
+    def finish(self, c: "Checker") -> None:
+        self.stop.set()
+        self.thread.join(5)
+        if self.best is None:
+            c.verify("boot splash", False, "no screen grabs")
+            return
+        score, w, h, rgb = self.best
+        os.makedirs(SCREENS, exist_ok=True)
+        path = os.path.join(SCREENS, "boot-splash.png")
+        write_png(path, w, h, rgb)
+        uid, gid = os.environ.get("HOST_UID"), os.environ.get("HOST_GID")
+        if uid and gid:
+            os.chown(path, int(uid), int(gid))
+        print(f"[info] screenshot {os.path.relpath(path, ROOT)}")
+        c.verify("boot splash shown (crimson screen with the cyan logo)", score > 1.5, f"score {score:.2f}")
+
+
 def tty1_tour(mon: Monitor) -> None:
     """Screenshot the dashboard on tty1, switch theme from it, quit to the shell prompt."""
     mon.screenshot("tty1-dashboard")
@@ -262,6 +354,9 @@ def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
     c.wait("pgrep -x swaybg >/dev/null && echo UP", "UP", 60)
     c.con.run(ENV, 30)
     c.wait("nullgrid-shell status 2>/dev/null", r"theme=\S+ wm=HYPRLAND .*", 60)
+    # The ice-protocol switch in CHECKS ran outside the session, where the hooks that need it
+    # (hyprctl reload, the wallpaper) can't run. Back to the default, from inside the session.
+    c.check("nullgrid theme set crimson-hud | grep -o 'reloaded: .*'", r"reloaded: .*hyprland.*wallpaper.*")
     # the test VM's virtio-gpu has no 3D: the session must notice (the shell then skips animations)
     c.check("tr '\\0' '\\n' < /proc/$(pgrep -x Hyprland)/environ | grep -x NULLGRID_SOFTWARE_RENDER=1",
             r"NULLGRID_SOFTWARE_RENDER=1")
@@ -271,12 +366,24 @@ def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
     # the login terminal (kitty takes a few seconds to map under software rendering)
     if not c.wait("hyprctl clients | grep -c 'class: nullgrid-welcome'", "1", 30):
         c.info("pgrep -a kitty; hyprctl clients | grep -E 'class|title'; ls -t ~/.local/state/nullgrid/")
+    for command, expect in TOOLKIT_CHECKS:
+        c.check(command, expect)
     time.sleep(4)  # kitty draws fastfetch
     mon.screenshot("desktop-hyprland")
     c.info("free -m | awk '/Mem/ {print \"used MB:\", $3}'")
-    c.check("nullgrid theme set toxic-grid | grep -o 'reloaded: .*'", r"reloaded: .*hyprland.*wallpaper.*")
+    # GUI apps on workspace 2 (GTK: Thunar, Firefox), to see them follow a theme switch
+    c.con.run("hyprctl dispatch workspace 2 >/dev/null; setsid -f thunar ~ </dev/null >/dev/null 2>&1;"
+              " setsid -f firefox --new-instance about:blank </dev/null >/dev/null 2>&1", 30)
+    c.wait("hyprctl clients | grep -c 'class: thunar'", "1", 30)
+    c.wait("hyprctl clients | grep -c 'class: firefox'", "1", 60)
+    time.sleep(8)  # Firefox draws its first window slowly under software rendering
+    mon.screenshot("desktop-hyprland-apps")
+    c.check("nullgrid theme set toxic-grid | grep -o 'reloaded: .*'", r"reloaded: kitty, hyprland, .*wallpaper.*toolkit.*")
     c.wait("nullgrid-shell status", r"theme=toxic-grid .*", 20)     # the shell restyled itself
     time.sleep(5)
+    mon.screenshot("desktop-hyprland-apps-toxic-grid")
+    c.con.run("pkill -x thunar; pkill -x firefox; hyprctl dispatch workspace 1 >/dev/null", 30)
+    time.sleep(2)
     mon.screenshot("desktop-hyprland-toxic-grid")
     c.con.run("notify-send -a nullgrid 'Uplink established' 'Node 2.2 is online.';"
               " notify-send -a battery -u critical 'Battery critical' '5% left, plug in the charger.'", 30)
@@ -318,7 +425,7 @@ def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
         c.wait("pgrep -x swaybg >/dev/null && echo UP", "UP", 60)
         c.con.run(ENV, 30)
         c.check("swaymsg -t get_version | grep -o '\"human_readable\": \"[0-9.]*'", r'"human_readable": "1\.\d+.*')
-        c.check("swaymsg -t get_tree | grep -c '\"app_id\": \"nullgrid-welcome\"'", r"1")
+        c.wait("swaymsg -t get_tree | grep -c '\"app_id\": \"nullgrid-welcome\"'", "1", 30)  # kitty maps slowly
         c.wait("nullgrid-shell status 2>/dev/null", r"theme=\S+ wm=SWAY .*", 60)
         # same boot, new session: the login sound, Sway's events
         c.wait("nullgrid-sfx status", r'.*"recent": \[[^]]*"login".*"sources": \["sway", "udev"\].*', 20)
@@ -337,6 +444,33 @@ def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
     time.sleep(4)
 
 
+def greeter_tour(c: Checker, mon: Monitor) -> None:
+    """The greeter (not enabled on the live ISO): run greetd on tty3, log in, pick TTY mode."""
+    # the installed config, moved to tty3 and with TTY mode preselected (greetd runs it with sh -c)
+    c.con.run(r"""sed -e 's/^vt = 1/vt = 3/' -e "s/^command = .*/command = \"tuigreet --cmd 'nullgrid-login tty'\"/" """
+              "/usr/share/nullgrid/greetd/greetd.toml > /tmp/greetd-test.toml", 30)
+    c.check("grep -c -e 'vt = 3' -e \"nullgrid-login tty\" /tmp/greetd-test.toml", r"2")
+    c.con.run("sudo setsid -f greetd --config /tmp/greetd-test.toml </dev/null >/tmp/greetd.log 2>&1", 30)
+    if not c.wait("pgrep -x tuigreet >/dev/null && echo UP", "UP", 30):
+        c.info("cat /tmp/greetd.log")
+        return
+    c.con.run("sudo chvt 3", 30)
+    time.sleep(5)
+    mon.screenshot("greeter")
+    mon.keys(*"nullgrid", "ret")
+    time.sleep(2)
+    mon.keys(*"nullgrid", "ret")
+    # the picked mode: the TTY dashboard, on the greeter's console
+    if c.wait("ps -o tty= -C nullgrid-dash | grep -c tty3", "1", 60):
+        time.sleep(4)
+        mon.screenshot("greeter-tty-session")
+        c.check("for p in $(pgrep -x zsh); do [ $(ps -o tty= -p $p) = tty3 ] && sudo cat /proc/$p/environ"
+                " | tr '\\0' '\\n' | grep -E '^TERM='; done", r"TERM=linux")
+    else:
+        c.info("cat /tmp/greetd.log; ps -ef | grep -E 'greet|zsh|dash' | grep -v grep")
+    c.con.run("sudo pkill -x greetd; sudo chvt 1", 30)
+
+
 def main() -> int:
     tmp = tempfile.mkdtemp()
     mon_path = os.path.join(tmp, "monitor.sock")
@@ -348,8 +482,14 @@ def main() -> int:
     failures = c.failures
     try:
         t0 = time.monotonic()
+        for _ in range(100):  # the monitor socket appears once QEMU is up
+            if os.path.exists(mon_path):
+                break
+            time.sleep(0.1)
+        splash = SplashWatch(mon, tmp)  # (QEMU's monitor takes one client: share it)
         con.wait_for(PROMPT, BOOT_TIMEOUT)
         print(f"[ok] reached shell prompt in {time.monotonic() - t0:.0f}s")
+        splash.finish(c)
         # A plain shell without line editing or echo keeps the output parseable.
         con.send("exec bash --norc --noprofile --noediting")
         time.sleep(2)  # zsh drops typed-ahead input when it execs
@@ -359,6 +499,7 @@ def main() -> int:
         try:
             desktop_tour(c, mon, rec)
             tty1_tour(mon)
+            greeter_tour(c, mon)
         except OSError as exc:
             print(f"[FAIL] screenshots: {exc}")
             failures.append("screenshots")

@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-13: Phase 6 DONE, next is Phase 7
+### Status as of 2026-10-14: Phase 7 DONE, next is Phase 8
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -372,8 +372,9 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
   sounds, boot/login sounds, cava. Docs: `docs/SOUND.md`, phase-6 section in DECISIONS.
 
 **Gotchas learned (phase 6):**
-- Never signal a process that doesn't catch the signal: a kitty that is still starting dies of
-  SIGUSR1. `render.run_reload` checks `SigCgt` in /proc/PID/status.
+- Never signal a process that doesn't handle the signal: a kitty that is still starting dies of
+  SIGUSR1. `render.run_reload` checks `SigCgt | SigBlk` in /proc/PID/status (kitty blocks USR1
+  and reads it from a signalfd: checking only SigCgt skipped it; fixed in phase 7).
 - Loading a module with dataclasses via importlib needs `sys.modules[name] = mod` first.
 - Two fake players started together log in either order: compare sorted in tests.
 - `python -m pkg` processes are named `python`; the daemon sets its name with prctl so the
@@ -381,8 +382,59 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - cava pulls `jack`: without `pipewire-jack` in the package list, pacman picks jack2.
 - QEMU `-audiodev wav,path=...` records the guest's sound card; `sendkey volumeup` works.
 
-**Next step, Phase 7 (GTK/Qt/icons/cursor/Plymouth/greeter):** GTK3/4 theme from
-`generated/gtk-colors.css`, Qt via qt6ct/Kvantum (`qt6ct-colors.conf` exists), original line
-icon theme (circular outline) + open-licensed fallback, cursor theme, Plymouth "system boot"
-splash (scanline + lattice logo + fake boot log; the logo's moving hole animates), greetd +
-tuigreet theme (live ISO keeps autologin). Theme switch must restyle GTK/Qt apps live.
+**Phase 7 delivered:**
+- `nullgrid toolkit apply [--reload] [--force]` (`toolkit.py`): from generated `toolkit.json` it
+  builds the icon theme (`icons.py`: original line icons from `glyphs.py` in 4 frames, ~240 names,
+  SVG, per palette) and cursors (`cursors.py`: 25 shapes, rsvg-convert sprite -> own PNG decoder ->
+  own Xcursor writer, cached per palette in ~/.cache/nullgrid/cursors) into
+  `~/.local/share/icons/NULLGRID/`, writes GSettings (theme/icons/cursor/fonts/color-scheme), and
+  flips gtk-theme/icon-theme/cursor-theme to Adwaita and back so running GTK apps reload;
+  `hyprctl setcursor` / swaymsg for the pointer. Paths gain `data_home` (`{data_home}` in manifest).
+- Targets: `toolkit`, `gtk`/`gtk-dark`/`gtk4` (adw-gtk3 imported + palette + NULLGRID rules,
+  `gtk-colors.inc.j2`, `gtk-rules.inc.j2`), `qt`/`qt-style`/`qt6ct` (qt6ct.conf has a palette
+  `revision` so qt6ct's directory watcher restyles live), `zathura` (reload over D-Bus). 32 targets.
+  `[theme.style] cursor_size`. `nullgrid theme palette [--preset] [--format vtrgb]`. Doctor checks.
+- Session: `QT_QPA_PLATFORMTHEME=qt6ct` (nullgrid-session + Hyprland), XCURSOR_* in generated
+  Hyprland theme, `seat * xcursor_theme` in Sway, `nullgrid toolkit apply` at session start.
+  nullgrid-desktop: gschema override, `/etc/xdg/{hyprland,sway}-mimeapps.list`, Firefox policies,
+  deps adw-gtk-theme qt6ct dconf gsettings-desktop-schemas. New keybind `browser` = SUPER+W, dock
+  browser button.
+- Package `nullgrid-boot`: Plymouth script theme (`plymouth/generate.py` pre-renders all images incl.
+  text; `nullgrid.script` animates: wandering dead pixel, scanline, boot log, segmented progress,
+  password prompt), greetd (drop-in -> `/usr/share/nullgrid/greetd/greetd.toml`) + tuigreet
+  (`/etc/tuigreet/config.toml`, matrix background, sessions in /usr/share/nullgrid/sessions ->
+  `nullgrid-login desktop|tty` -> `zsh -l` with `NULLGRID_SESSION_MODE`), console palette service
+  (`setvtrgb`, crimson-hud). Splash and greeter always use crimson-hud.
+- ISO: `quiet splash plymouth.ignore-serial-consoles fbcon=nodefer`, HOOKS `kms consolefont
+  plymouth`, `/etc/plymouth/plymouthd.conf` Theme=nullgrid (airootfs; pacman keeps it, .pacnew),
+  console palette service enabled (multi-user.target), second boot entry without splash. Firefox, Thunar, Ristretto,
+  zathura(+pdf-mupdf, tesseract-data-eng), ttf-dejavu, greetd (not enabled; live = autologin).
+  ISO ~1.9 GB. All packages 0.7.0 (fonts/base unchanged).
+- Tests: `make test` (203+: icons, cursors incl. PNG/Xcursor round trips, toolkit apply with a fake
+  gsettings, templates, splash generator, greeter files). `make test-shell` opens Thunar, zathura
+  and a Qt window (`tests/qt_palette.qml`) and checks by pixels (`tests/window_color.py`) that they
+  take the theme and follow a switch live. `make splash` previews Plymouth (X11 renderer + Xvfb).
+  `make test-boot` grabs the splash during boot, checks toolkit settings, Thunar/Firefox across a
+  theme switch, and logs in through greetd on tty3 into TTY mode. Docs: `docs/TOOLKITS.md`,
+  `docs/BOOT.md`, phase-7 section in DECISIONS.
+
+**Gotchas learned (phase 7):**
+- GTK only re-reads a theme when its name changes: flip the gsettings key away and back.
+  libadwaita ignores themes; `~/.config/gtk-4.0/gtk.css` would freeze colors for all GTK 4 apps.
+- qt6ct ignores itself (its own window is no Qt test) and watches only `~/.config/qt6ct/`, not
+  `colors/` or `qss/`: change qt6ct.conf (written last) to trigger a restyle.
+- The QEMU monitor socket takes one client at a time: share one connection in tests.
+- Plymouth + deferred fbcon takeover = `systemd-vconsole-setup` racing Hyprland for tty1 (EIO,
+  "degraded", no Terminus font). Fixed with `fbcon=nodefer` + `consolefont` hook (installer too).
+- Plymouth restores the console palette it found when it quits: the palette service runs after
+  `plymouth-quit-wait`. greetd sets no TERM: `nullgrid-login` exports `TERM=linux` on a VT.
+- Manifest reload commands only expand `{target}` now (shell/awk braces pass through).
+- pacman picks the first provider alphabetically: pin `tesseract-data-eng`, `ttf-dejavu`.
+- Plymouth's script language: no reliable number->string formatting; spell names out in generated
+  arrays. `plymouthd --no-daemon` + `plymouth show-splash` under Xvfb uses the X11 renderer.
+
+**Next step, Phase 8 (installer):** themed TUI installer (`nullgrid-install`, gum/whiptail or
+archinstall), disk/user/locale/keyboard/timezone/GPU drivers (Intel/AMD/NVIDIA, hybrid), then a
+first-run wizard (theme, sound pack, mode). It must: enable greetd (disable tty1 autologin), set
+`plymouth-set-default-theme nullgrid`, add `kms consolefont plymouth` hooks, kernel params
+`quiet splash fbcon=nodefer`, enable `nullgrid-console-palette.service`.

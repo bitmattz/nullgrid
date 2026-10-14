@@ -282,6 +282,99 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   that `nullgrid sound test` makes it non-silent. `make run` sends the VM's sound to the host.
 - All NULLGRID packages except fonts and base are 0.6.0; new package `nullgrid-sfx`.
 
+## Phase 7
+
+- **GTK theme = adw-gtk3 recolored, not a theme written from scratch.** adw-gtk3 (LGPL-2.1, Arch
+  package `adw-gtk-theme`) is libadwaita's look ported to GTK 3, and it draws everything with
+  named colors (`@window_bg_color` ...). The generated NULLGRID theme imports it, redefines those
+  colors from the palette and adds the NULLGRID details: square corners (`round` gives 6 px;
+  GTK can't cut corners), a neon rule under header bars, hatched toggles and selections,
+  segmented progress bars, glow on default/destructive buttons and focused entries, no client
+  shadows (the compositor draws the border and glow). A from-scratch theme would cover far fewer
+  widgets. GTK 4 apps that follow the theme setting get the same rules on adw-gtk3's GTK 4 sheet.
+- **The theme is generated per user** into `~/.local/share/themes/NULLGRID/` (manifest targets
+  `gtk`, `gtk-dark`, `gtk4`), so it follows `nullgrid theme set`. GTK only re-reads a theme when
+  its *name* changes, so `nullgrid toolkit apply --reload` flips `gtk-theme` (and `icon-theme`,
+  `cursor-theme` when those changed) to Adwaita and back, 0.25 s apart. Thunar restyles in place;
+  `make test-shell` checks it by the window's colors.
+- **libadwaita apps are not themed.** They ignore GTK themes on purpose; the only way in is
+  `~/.config/gtk-4.0/gtk.css`, which GTK loads once at start and which would then also override
+  the live-switchable theme in every other GTK 4 app. NULLGRID ships no libadwaita app; those
+  apps still get the dark style (`color-scheme`).
+- **Settings go through GSettings** (`org.gnome.desktop.interface`: theme, icons, cursor, size,
+  fonts, color scheme). GTK reads them there on Wayland; dconf stores them. Defaults ship as a
+  schema override in nullgrid-desktop; `nullgrid toolkit apply` writes only values that differ.
+- **Qt: qt6ct + Fusion + a generated style sheet, no Kvantum.** qt6ct takes a palette file and a
+  QSS, both templated; Kvantum would need an SVG theme per palette. qt6ct watches its config
+  *directory*: the generated `qt6ct.conf` carries a `revision` of the palette, so it changes (and is
+  replaced last) whenever the colors do, and running Qt apps restyle live. `nullgrid-session` exports
+  `QT_QPA_PLATFORMTHEME=qt6ct` (Sway can't set environment variables), and Hyprland's defaults set
+  it too. Quickshell gets it as well: the start menu then finds app icons in the NULLGRID theme.
+- **Icons: original, generated per palette.** `nullgrid/icons.py` frames the line glyphs of
+  `nullgrid/glyphs.py` (the same set as the shell's `Icons.js`; a test keeps them equal) in four
+  shapes: circles for apps and categories, chamfered folders, sheets with a cut corner for file
+  types, chamfered plates for devices. About 240 icon names, 74 drawings, written as SVG with
+  symlinks for aliases, in under a second, so the icons follow theme switches too. App icons are
+  drawn for generic names and for the apps NULLGRID ships (Firefox gets a globe, not its logo).
+  Everything else is inherited from Adwaita (symbolic icons, which GTK recolors to the theme
+  anyway) and hicolor (apps' own icons).
+- **Cursors: original, generated per palette, pure Python Xcursor writer.** 25 shapes (117 names) (angular
+  arrow, hand, I-beam, reticle, resize arrows, an animated ring for busy) on a 32 px canvas, each
+  rendered at 24/32/48 px plus `[theme.style] cursor_size`. One rsvg-convert call per size renders
+  a sprite sheet; a small PNG decoder cuts it into Xcursor files (no xcursorgen). 0.3 s; cached per
+  palette in `~/.cache/nullgrid/cursors/`, so switching back is instant. The cursor theme shares the
+  icon theme's name (NULLGRID) and directory. Hyprland gets it by `hyprctl setcursor`, Sway by
+  `seat * xcursor_theme`, which also sets `XCURSOR_*` for apps.
+- **Plymouth: script plugin with pre-rendered images.** `plymouth/generate.py` draws every image,
+  text included, as SVG and renders it at package build time, so the initramfs needs no fonts and
+  the splash looks the same everywhere. The script places and animates them: the dead pixel walks
+  the lattice (16 pre-rendered logos), a scanline sweeps down, a fake boot log scrolls, a
+  segmented bar shows progress (Plymouth's, but never visibly stuck), the logo flickers in at
+  power-on. Password prompts (encrypted disks) and messages use Plymouth's own text rendering,
+  as they carry text from the system. `make splash` previews it with Plymouth's X11 renderer.
+- **The splash and the greeter use crimson-hud.** They run before anyone logs in, and the splash
+  lives in the initramfs: following a user's theme would need root and an initramfs rebuild per
+  switch. One system theme for boot and login is the honest version.
+- **Live ISO:** `quiet splash plymouth.ignore-serial-consoles` (the serial console used by the
+  boot test would otherwise make Plymouth fall back to text), the `plymouth` mkinitcpio hook
+  after `kms`, `Theme=nullgrid` in `/etc/plymouth/plymouthd.conf`. A second boot entry shows boot
+  messages instead (`plymouth.enable=0`).
+- **`fbcon=nodefer` + the `consolefont` hook, because of a race the boot test found.** With the
+  splash, the kernel delays fbcon's takeover of the console until something writes to tty1, which
+  is getty's autologin. That adds a console and makes udev restart `systemd-vconsole-setup` right
+  when the session starts Hyprland on tty1; when Hyprland wins, the setup fails (EIO: the system is
+  "degraded") and tty1 keeps the kernel font, which lacks TTY mode's glyphs. With `nodefer` the
+  takeover happens when the GPU driver loads in the initramfs, `consolefont` sets the Terminus font
+  right after, and Plymouth starts last: nothing is left to race. The installer must set both too.
+- **Greeter: greetd + tuigreet, configured not enabled.** nullgrid-boot ships the configs; the
+  installer (phase 8) enables greetd; the live ISO keeps autologin. tuigreet 0.11 reads a TOML
+  config (`/etc/tuigreet/config.toml`): HUD title and greeting, time, a matrix-rain background at
+  12 fps, colors as console color names. greetd's own config file is left alone; a unit drop-in
+  points greetd at `/usr/share/nullgrid/greetd/greetd.toml`.
+- **Mode at the greeter:** two sessions, "NULLGRID desktop" and "NULLGRID terminal", both run
+  `nullgrid-login MODE` = the zsh login shell with `NULLGRID_SESSION_MODE` set, so the usual login
+  path (first-run `nullgrid init`, shell env, desktop or dashboard) runs unchanged, on whatever
+  console the greeter is on. Leaving the desktop ends the session and returns to the greeter.
+- **Console palette for everyone:** `nullgrid-console-palette.service` loads the crimson-hud
+  console colors with `setvtrgb` before the greeter and the gettys, so "cyan" in tuigreet's
+  config is the neon accent. It must run *after* Plymouth quits: Plymouth restores the palette it
+  found at startup when it exits (the boot test caught the VGA colors coming back). Generated at
+  build time by `nullgrid theme palette --format vtrgb`. The boot test reads the kernel's default
+  palette from `/sys/module/vt/parameters/default_red`.
+- **greetd sets no `TERM`**, so `nullgrid-login` sets `TERM=linux` on a console; without it the
+  login shell skipped the user's console palette and the console variants of the apps.
+- **GUI essentials on the ISO:** Firefox (its default theme takes the GTK colors; policies turn
+  off first-run pages and telemetry), Thunar (GTK 3), Ristretto (GTK 3), zathura (its own colors,
+  generated; running viewers re-read them over D-Bus). Default apps per session via
+  `/etc/xdg/{hyprland,sway}-mimeapps.list`. The dock gained a browser button; `browser` is a new
+  keybind action (`SUPER+W`).
+- **Fix: "handles the signal" also means blocked.** Phase 6 sent reload signals only to processes
+  with a handler (`SigCgt`). kitty has none: it blocks SIGUSR1 and reads it from a signalfd, so
+  theme switches stopped reaching kitty. A blocked signal can't kill, so `SigCgt | SigBlk` counts.
+  The boot test now requires kitty in the `reloaded:` list.
+- Manifest commands now only expand `{target}` (a zathura reload command contains awk braces).
+- All NULLGRID packages except fonts and base are 0.7.0; new package `nullgrid-boot`.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

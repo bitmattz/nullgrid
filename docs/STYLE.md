@@ -16,3 +16,15 @@ only the palette changes between presets.
   bottom right to the HUD widgets. Wallpaper decor that carries text (logo plate, data blocks,
   keymap) stays out of those areas: the logo plate goes top right, data top left and bottom left.
   Circuit traces may run anywhere along the edges.
+- **Icons:** stroked line glyphs on a 24 px grid (square caps, miter joins, no fills), framed by
+  shape: a circle for apps (with a short tick in the secondary accent), a chamfered folder for
+  places, a sheet with a cut corner for files, a chamfered plate for devices. Primary accent for
+  lines, a dark fill, secondary accent for one small detail. No brand logos: apps get a generic
+  glyph for what they do.
+- **Cursors:** angular shapes with a dark body, a primary-accent outline and a dark halo so they
+  read on light backgrounds too; the secondary accent only for "forbidden" and small badges.
+- **GUI toolkits:** square corners (GTK and Qt can't cut corners; `round` allows slight rounding),
+  a 1 px neon line under header bars and around popups, hatched fills for "on" and selected, no
+  window shadows from apps (the compositor draws border and glow).
+- **Boot and login:** the splash and the greeter always use crimson-hud (they show before any
+  user's theme is known). The splash's flicker-in is one of the "rare events" allowed to glitch.

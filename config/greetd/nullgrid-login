@@ -8,4 +8,9 @@ case ${1:-} in
     desktop|tty) export NULLGRID_SESSION_MODE=$1 ;;
     *) echo "usage: nullgrid-login desktop|tty" >&2; exit 2 ;;
 esac
+# greetd doesn't set TERM; on a Linux console it must say so (the console palette and the
+# console variants of the apps depend on it)
+case $(tty) in
+    /dev/tty[0-9]*) export TERM=linux ;;
+esac
 exec zsh -l
