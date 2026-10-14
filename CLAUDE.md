@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-14: Phase 8 DONE, next is Phase 9
+### Status as of 2026-10-14: Phase 9 DONE (all build phases); next: Raspberry Pi image builder
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -472,5 +472,30 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - The live ISO runs `LANG=C.UTF-8`, which isn't in glibc's SUPPORTED list: default to en_US.UTF-8.
 - Serial checks strip each line: no trailing spaces in expected regexes.
 
-**Next step, Phase 9 (polish & performance):** measure idle RAM/CPU (desktop < 700 MB in a 4 GB
-VM, widgets < 2% CPU), boot time; fix; finish docs. Then the Raspberry Pi image builder (DECISIONS).
+**Phase 9 delivered:**
+- `nullgrid perf [--seconds N] [--top N] [--json]` (`nullgrid/perf.py`): PSS + CPU per component
+  (compositor, shell, wallpaper, sound, audio, terminal, ...), start times, leaves itself out.
+- `make perf` (`tests/perf_smoke.py`, `PERF_ARGS`): ISO in a 4 GB VM without 3D, Hyprland then
+  Sway lite, 90 s settle + 60 s window -> `out/perf/report.{md,json}`; budget Hyprland < 750 MiB,
+  lite < 700 MiB, shell/wallpaper/sound < 2% CPU. Result: Hyprland 722-738 MiB, lite 585-608 MiB (boot-to-boot variance), shell
+  0.2%, compositor 2.1%; shell up 14.7 s after boot. User accepted 722 as meeting "~700" (VM =
+  worst case, software rendering). Docs: `docs/PERFORMANCE.md`, phase-9 section in DECISIONS.
+- Fixes: THP `madvise` (`nullgrid-base` tmpfiles, -150 MiB); NULLGRID_SOFTWARE_RENDER: widgets
+  >= 2 s (`shell/Theme.qml`), no blur (generated Hyprland theme); kitty `auto_reload_config -1`;
+  live autologin gettys `Type=simple`; `nullgrid-shell restart` kills both config paths.
+  Boot test checks kitty config errors and no `__watch_conf__`. All packages 0.9.0 (fonts unchanged).
+
+**Gotchas learned (phase 9):**
+- getty@.service is `Type=idle`: it waits up to 5 s for other boot jobs (live: pacman-init).
+- kitty `auto_reload_config` is a number (seconds; negative = off). A bad value doesn't fail:
+  kitty opens a `kitten __show_error__` window.
+- Repeated session restarts in one boot drift "memory used" upward: compare fresh boots only.
+- PSS counts file-backed pages; "used" (MemTotal - MemAvailable) is anon + shmem + kernel. Check
+  `Anonymous:` in smaps_rollup to see what really costs.
+- `quickshell kill` takes `-c NAME` or `-p PATH`; an instance started from another config path
+  isn't found by `-c`.
+- For digging into a running VM: `tests/probe_vm.py` boots once and runs commands written to
+  `out/probe/cmd-NN.sh` (output in `out-NN.txt`); usage in its docstring.
+
+**Next (after phase 9):** the Raspberry Pi SD-image builder (`docs/DECISIONS.md`, light hardware
+strategy). Ideas not done: measure on a real GPU / with virgl; Xwayland on demand.

@@ -31,6 +31,7 @@ Firefox across a theme switch), Sway via the lite profile, TTY mode (the dashboa
 greeter (greetd on tty3: logs in and picks TTY mode). Screen grabs during boot must show the
 Plymouth splash (`out/screens/boot-splash.png`). Screenshots of each go to `out/screens/` |
 | `make test-install` | boots the ISO with a blank 24 GB virtual disk, installs to it unattended (`nullgrid-install --config`), then boots the installed disk with UEFI and checks it over serial (no live leftovers, greeter, keyboard/locale/time zone, sudo with a password, keyring, splash in the initramfs), logs in through the greeter on tty1 and takes the first-run wizard into TTY mode, then boots the disk with legacy BIOS. `ENCRYPT=1` installs with LUKS and types the passphrase into the splash. Screenshots: `out/screens/installed-*.png`. Needs ~10 GB free for the disk image |
+| `make perf` | boots the ISO in a 4 GB VM (no 3D), lets the Hyprland desktop settle, measures it with `nullgrid perf` for 60 s, then the lite (Sway) session; writes `out/perf/report.md` + `report.json` (with the boot timeline) and checks the budget in [PERFORMANCE.md](PERFORMANCE.md). `PERF_ARGS="--settle 30 --window 20"` for a quick run |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 

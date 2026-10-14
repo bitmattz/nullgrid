@@ -428,6 +428,31 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 - New package `nullgrid-installer` (with `arch-install-scripts` and `dosfstools` on the ISO). All
   NULLGRID packages except fonts and base are 0.8.0.
 
+## Phase 9
+
+- **Measure first, with a tool users can run too:** `nullgrid perf` (PSS + CPU per component,
+  start times) and `make perf` (the ISO in a 4 GB VM without 3D: Hyprland, then Sway lite).
+  Results and method in `docs/PERFORMANCE.md`.
+- **Transparent huge pages `madvise`** (tmpfiles rule in `nullgrid-base`): Arch's `always` gave
+  the idle desktop 288 MB of 2 MB pages; Hyprland, kitty and Quickshell heaps are mostly empty
+  space under software rendering. −150 MiB, no visible cost for desktop use.
+- **No 3D GPU (`NULLGRID_SOFTWARE_RENDER`) = cheaper drawing:** widgets sample every 2 s (each
+  update is a software redraw by the compositor: idle CPU halved), and Hyprland drops blur
+  (−24 MiB, less CPU). The glow and animations stay; real GPUs keep everything.
+- **kitty `auto_reload_config -1`:** the theme engine signals kitty, so the per-kitty config
+  watcher process (~20 MiB) isn't needed. The boot test now fails on kitty config errors (a wrong
+  value only opens an error window).
+- **Live ISO autologin `Type=simple`:** systemd's `Type=idle` gettys wait up to 5 s for other
+  boot jobs; `pacman-init` (keyring) runs ~9 s at every live boot.
+- **The memory budget, agreed with the project owner:** the GPU-less VM's Hyprland desktop idles
+  at 722-738 MiB, the lite session at 585-608 MiB (two fresh boots). Accepted as meeting "~700 MB": the VM is the worst
+  case (software rendering). `make perf` checks < 750 MiB for Hyprland there, < 700 for lite.
+  Not done: dropping the login terminal without a GPU (−110 MiB, but it's part of the look).
+- Tried and dropped (no effect): `MALLOC_ARENA_MAX=2`, `LP_NUM_THREADS=1`.
+- Fix: `nullgrid-shell restart` also stops a shell started from the other config location
+  (system vs. a user copy made since).
+- All packages 0.9.0 except fonts (`nullgrid-base` 0.9.0 now carries the memory setting).
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

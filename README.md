@@ -4,14 +4,14 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 8 (installer)**. The ISO boots through an animated Plymouth splash
-> into a Hyprland desktop (Sway as fallback and lite session) with the NULLGRID shell: status bar,
-> dock, HUD widgets, start menu, notifications and a HUD lock screen, over a generated wallpaper,
-> with synthesized UI sounds on PipeWire. GTK and Qt apps (Firefox, Thunar, zathura...), the icon
-> theme and the mouse pointer follow the theme too, live. TTY mode gives a themed dashboard
-> instead. `nullgrid-install` puts the system on a disk (offline, optional encryption, UEFI and
-> BIOS) with a text greeter and a first-run wizard. Everything is styled from one TOML file by the
-> `nullgrid` tool. Polish and performance come next (see `CLAUDE.md` section 9).
+> Status: **phase 9 (polish & performance)**, all build phases done. The ISO boots through an
+> animated Plymouth splash into a Hyprland desktop (Sway as fallback and lite session) with the
+> NULLGRID shell: status bar, dock, HUD widgets, start menu, notifications and a HUD lock screen,
+> over a generated wallpaper, with synthesized UI sounds on PipeWire. GTK and Qt apps, the icon
+> theme and the mouse pointer follow the theme live. TTY mode gives a themed dashboard instead.
+> `nullgrid-install` puts the system on a disk (offline, optional encryption, UEFI and BIOS) with
+> a text greeter and a first-run wizard. Idle: ~720-740 MiB (Hyprland) / ~585-610 MiB (lite) in a 4 GB
+> VM without 3D, widgets well under 1% CPU ([docs/PERFORMANCE.md](docs/PERFORMANCE.md)).
 
 ## Screenshots
 
@@ -45,6 +45,7 @@ make test-shell  # the shell + GTK/Qt apps in a headless Sway: QML errors, live 
 make splash      # preview the Plymouth boot splash (Docker) -> out/screens/splash-*.png
 make test-boot   # headless boot test; needs only Docker
 make test-install  # install the ISO to a virtual disk and boot it (UEFI + BIOS); Docker
+make perf        # idle RAM/CPU of the desktop in a 4 GB VM -> out/perf/report.md; Docker
 ```
 
 Installing: boot the ISO, then start menu → *Install NULLGRID*, or `sudo nullgrid-install`.
@@ -58,6 +59,7 @@ nullgrid sound test all           # hear the active sound pack; sound set minima
 nullgrid toolkit apply            # GTK settings, icons and pointer (theme set does it for you)
 nullgrid mode tty                 # log in to the TTY dashboard instead of the desktop
 nullgrid doctor                   # check config and generated files
+nullgrid perf                     # what the desktop costs: memory and CPU per component
 ```
 
 See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
@@ -72,6 +74,7 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [TOOLKITS.md](docs/TOOLKITS.md): GTK and Qt apps, icons, cursors
 - [BOOT.md](docs/BOOT.md): boot splash, greeter, console colors
 - [INSTALL.md](docs/INSTALL.md): installing to a disk, GPU drivers, first-run wizard
+- [PERFORMANCE.md](docs/PERFORMANCE.md): idle memory/CPU, boot time, how to measure
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo
