@@ -1,0 +1,206 @@
+# NULLGRID boot splash (Plymouth script plugin). generate.py prepends the theme values (colors,
+# the dead pixel's walk) and draws every image; this file only places and animates them.
+# Reference layout is 1920x1080; everything scales with the screen.
+
+W = Window.GetWidth();
+H = Window.GetHeight();
+X0 = Window.GetX();
+Y0 = Window.GetY();
+s = Math.Min(W / 1920, H / 1080);
+if (s < 0.45) s = 0.45;
+cx = X0 + W / 2;
+cy = Y0 + H / 2;
+
+Window.SetBackgroundTopColor(bg_top_r, bg_top_g, bg_top_b);
+Window.SetBackgroundBottomColor(bg_bottom_r, bg_bottom_g, bg_bottom_b);
+
+fun scaled(name) {
+    img = Image(name + ".png");
+    return img.Scale(Math.Int(img.GetWidth() * s + 0.5), Math.Int(img.GetHeight() * s + 0.5));
+}
+
+fun place(sprite, img, x, y, z) {
+    sprite.SetImage(img);
+    sprite.SetPosition(Math.Int(x), Math.Int(y), z);
+}
+
+# --- the logo block ------------------------------------------------------------------------
+for (i = 0; i < cell_count; i = i + 1)
+    logo_img[cell_names[i]] = scaled("logo-" + cell_names[i]);
+logo_w = logo_img[home_cell].GetWidth();
+logo_h = logo_img[home_cell].GetHeight();
+logo_y = cy - 150 * s - logo_h / 2;
+logo = Sprite();
+place(logo, logo_img[hole_path[0]], cx - logo_w / 2, logo_y, 10);
+
+frame_img = scaled("frame");
+frame = Sprite();
+place(frame, frame_img, cx - frame_img.GetWidth() / 2, cy - 290 * s, 5);
+
+wordmark_img = scaled("wordmark");
+wordmark = Sprite();
+place(wordmark, wordmark_img, cx - wordmark_img.GetWidth() / 2, cy - 10 * s, 10);
+
+mode = Plymouth.GetMode();
+tagline_name = "tagline-boot";
+if (mode == "shutdown") tagline_name = "tagline-shutdown";
+if (mode == "reboot") tagline_name = "tagline-reboot";
+if (mode == "updates" || mode == "system-upgrade" || mode == "firmware-upgrade") tagline_name = "tagline-update";
+tagline_img = scaled(tagline_name);
+tagline = Sprite();
+place(tagline, tagline_img, cx - tagline_img.GetWidth() / 2, cy + 64 * s, 10);
+
+# --- progress: segments under the tagline --------------------------------------------------
+seg_on = scaled("seg-on");
+seg_off = scaled("seg-off");
+seg_step = 18 * s;
+seg_x = cx - segments * seg_step / 2;
+for (i = 0; i < segments; i = i + 1) {
+    seg[i] = Sprite();
+    place(seg[i], seg_off, seg_x + i * seg_step, cy + 108 * s, 10);
+}
+
+# --- decor and the boot log ----------------------------------------------------------------
+idstrip_img = scaled("idstrip");
+idstrip = Sprite();
+place(idstrip, idstrip_img, X0 + 44 * s, Y0 + 36 * s, 10);
+
+for (i = 0; i < log_count; i = i + 1)
+    log_img[i] = scaled(log_names[i]);
+log_visible = 8;
+log_line_h = 24 * s;
+for (i = 0; i < log_visible; i = i + 1) {
+    log_sprite[i] = Sprite();
+    log_sprite[i].SetPosition(Math.Int(X0 + 48 * s), Math.Int(Y0 + H - 56 * s - (log_visible - i) * log_line_h), 10);
+    log_sprite[i].SetOpacity(0);
+}
+
+scan_src = Image("scanline.png");
+scan_img = scan_src.Scale(W, Math.Int(40 * s + 0.5));
+scan = Sprite(scan_img);
+scan.SetPosition(X0, Y0 - 40 * s, 3);
+
+# --- prompts (encrypted disks) and messages ------------------------------------------------
+prompt_img = scaled("prompt");
+bullet_img = scaled("bullet");
+prompt = Sprite();
+place(prompt, prompt_img, cx - prompt_img.GetWidth() / 2, cy + 205 * s, 100);
+prompt.SetOpacity(0);
+prompt_label = Sprite();
+prompt_label.SetOpacity(0);
+for (i = 0; i < 32; i = i + 1) {
+    bullet[i] = Sprite(bullet_img);
+    bullet[i].SetOpacity(0);
+}
+message = Sprite();
+
+# --- animation -----------------------------------------------------------------------------
+frame_no = 0;
+progress = 0;
+log_shown = 0;
+hole_step = 0;
+
+fun refresh() {
+    global.frame_no = frame_no + 1;
+
+    # power-on glitch: the logo flickers in during the first half second
+    if (frame_no < 28) {
+        if (Math.Random() > 0.45) logo.SetOpacity(1); else logo.SetOpacity(0.15);
+        if (Math.Random() > 0.7) wordmark.SetOpacity(0.3); else wordmark.SetOpacity(1);
+    } else if (frame_no == 28) {
+        logo.SetOpacity(1);
+        wordmark.SetOpacity(1);
+    }
+
+    # the dead pixel wanders the lattice
+    if (frame_no % 18 == 0) {
+        global.hole_step = (hole_step + 1) % hole_path_len;
+        logo.SetImage(logo_img[hole_path[hole_step]]);
+    }
+
+    # the scanline sweeps down every three seconds
+    scan.SetY(Math.Int(Y0 - 40 * s + (frame_no % 150) / 150 * (H + 40 * s)));
+
+    # boot log: a line every quarter second, the newest at the bottom, older ones fading
+    if (frame_no % 13 == 0) global.log_shown = log_shown + 1;
+    for (i = 0; i < log_visible; i = i + 1) {
+        line = log_shown - log_visible + i;
+        if (line < 0) {
+            log_sprite[i].SetOpacity(0);
+        } else {
+            log_sprite[i].SetImage(log_img[line % log_count]);
+            log_sprite[i].SetOpacity(0.25 + 0.75 * (i + 1) / log_visible);
+        }
+    }
+
+    # progress: what Plymouth reports, but never visibly stuck at the start
+    shown = progress;
+    fake = frame_no / 900;
+    if (fake > 0.85) fake = 0.85;
+    if (fake > shown) shown = fake;
+    lit = Math.Int(shown * segments + 0.5);
+    for (i = 0; i < segments; i = i + 1) {
+        if (i < lit) seg[i].SetImage(seg_on); else seg[i].SetImage(seg_off);
+    }
+}
+Plymouth.SetRefreshFunction(refresh);
+
+fun boot_progress(duration, value) {
+    global.progress = value;
+}
+Plymouth.SetBootProgressFunction(boot_progress);
+
+fun show_prompt(text) {
+    prompt.SetOpacity(1);
+    label = Image.Text(text, text_r, text_g, text_b);
+    if (label) {
+        prompt_label.SetImage(label);
+        prompt_label.SetPosition(Math.Int(cx - label.GetWidth() / 2), Math.Int(cy + 253 * s), 101);
+        prompt_label.SetOpacity(1);
+    }
+}
+
+fun display_password(text, bullets) {
+    if (text == "") text = "passphrase";
+    show_prompt(text);
+    n = bullets;
+    if (n > 32) n = 32;
+    step = 18 * s;
+    x = cx - n * step / 2;
+    for (i = 0; i < 32; i = i + 1) {
+        if (i < n) {
+            bullet[i].SetPosition(Math.Int(x + i * step), Math.Int(cy + 290 * s), 101);
+            bullet[i].SetOpacity(1);
+        } else {
+            bullet[i].SetOpacity(0);
+        }
+    }
+}
+Plymouth.SetDisplayPasswordFunction(display_password);
+
+fun display_question(text, entry) {
+    show_prompt(text + " " + entry);
+}
+Plymouth.SetDisplayQuestionFunction(display_question);
+
+fun display_normal() {
+    prompt.SetOpacity(0);
+    prompt_label.SetOpacity(0);
+    for (i = 0; i < 32; i = i + 1) bullet[i].SetOpacity(0);
+}
+Plymouth.SetDisplayNormalFunction(display_normal);
+
+fun show_message(text) {
+    label = Image.Text(text, text_r, text_g, text_b);
+    if (label) {
+        message.SetImage(label);
+        message.SetPosition(Math.Int(cx - label.GetWidth() / 2), Math.Int(Y0 + H - 40 * s), 50);
+    }
+}
+Plymouth.SetMessageFunction(show_message);
+
+fun quit() {
+    logo.SetImage(logo_img[home_cell]);
+    for (i = 0; i < segments; i = i + 1) seg[i].SetImage(seg_on);
+}
+Plymouth.SetQuitFunction(quit);

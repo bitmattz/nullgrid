@@ -1,0 +1,10 @@
+{{ header("/*", "*/") }}
+/* The NULLGRID GTK 4 theme, for GTK 4 apps that follow the theme setting (libadwaita apps
+   ignore it; they get ~/.config/gtk-4.0/gtk.css). Base: adw-gtk3's GTK 4 style sheet. */
+
+@import url("file:///usr/share/themes/adw-gtk3-dark/gtk-4.0/libadwaita.css");
+@import url("file:///usr/share/themes/adw-gtk3-dark/gtk-4.0/libadwaita-tweaks.css");
+
+{% with vars_too = true %}{% include "gtk-colors.inc.j2" %}{% endwith %}
+
+{% with gtk4 = true %}{% include "gtk-rules.inc.j2" %}{% endwith %}

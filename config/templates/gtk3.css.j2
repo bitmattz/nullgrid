@@ -1,0 +1,9 @@
+{{ header("/*", "*/") }}
+/* The NULLGRID GTK 3 theme: adw-gtk3 (package adw-gtk-theme) in the NULLGRID palette.
+   GTK reads it from ~/.local/share/themes/NULLGRID/; `nullgrid toolkit apply` reloads it. */
+
+@import url("file:///usr/share/themes/adw-gtk3-dark/gtk-3.0/gtk.css");
+
+{% include "gtk-colors.inc.j2" %}
+
+{% with gtk4 = false %}{% include "gtk-rules.inc.j2" %}{% endwith %}

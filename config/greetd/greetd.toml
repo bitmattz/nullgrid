@@ -1,0 +1,9 @@
+# greetd for NULLGRID (nullgrid-boot): tuigreet on the first console. tuigreet's look and the
+# sessions it offers are in /etc/tuigreet/config.toml. Enable with: systemctl enable greetd
+# (the NULLGRID installer does; the live ISO logs in automatically instead).
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet"
+user = "greeter"

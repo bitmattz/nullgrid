@@ -38,6 +38,7 @@ ACTIONS: dict[str, tuple[str, str | None]] = {
     "start_menu": ("start menu", "nullgrid-shell menu"),
     "launcher": ("app launcher", "fuzzel"),
     "files": ("file manager", "kitty --class nullgrid-files yazi"),
+    "browser": ("web browser", "firefox"),
     "dashboard": ("system dashboard", "kitty --class nullgrid-dash nullgrid-dash"),
     "keys_help": ("show keybinds", "kitty --class nullgrid-keys nullgrid keys --pause"),
     "theme_next": ("next theme", "nullgrid theme next"),

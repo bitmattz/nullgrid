@@ -48,6 +48,8 @@ software_render && export NULLGRID_SOFTWARE_RENDER=1
 # No render node at all (simpledrm/efifb): Sway uses its pixman renderer.
 ls /dev/dri/renderD* >/dev/null 2>&1 || export WLR_RENDERER=pixman
 export XDG_SESSION_TYPE=wayland
+# Qt apps follow the theme through qt6ct (Sway can't set environment variables itself).
+export QT_QPA_PLATFORMTHEME=qt6ct
 # The console login set these to the console variants of the apps; the desktop has the real thing.
 unset STARSHIP_CONFIG YAZI_CONFIG_HOME
 

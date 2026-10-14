@@ -60,6 +60,7 @@ STYLE = Table({
     "terminal_opacity": Float(0.3, 1, default=0.92),
     "blur": Bool(default=True),
     "gaps": Int(0, 40, default=8, doc="space between windows in px"),
+    "cursor_size": Int(16, 96, default=24, doc="mouse pointer size in px"),
 })
 
 THEME = Table({

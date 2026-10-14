@@ -1,0 +1,45 @@
+# NULLGRID boot and login: the Plymouth splash, the greeter (greetd + tuigreet) and the console
+# palette. The splash images are drawn at build time by plymouth/generate.py (crimson-hud colors:
+# the splash and the greeter show before any user theme applies).
+pkgname=nullgrid-boot
+pkgver=0.7.0
+pkgrel=1
+pkgdesc="NULLGRID boot splash, greeter and console colors"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=(
+  'plymouth'                       # boot splash (add the plymouth hook to mkinitcpio.conf)
+  'greetd' 'greetd-tuigreet'       # login screen; enable with: systemctl enable greetd
+  'kbd'                            # setvtrgb: console palette
+  'zsh' 'nullgrid-terminal'        # the sessions start the NULLGRID login shell
+)
+makedepends=('python' 'python-jinja' 'python-tomlkit' 'librsvg' 'nullgrid-fonts' 'ttf-jetbrains-mono')
+backup=('etc/tuigreet/config.toml')
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+build() {
+  python plymouth/generate.py --out plymouth-theme
+  PYTHONPATH=tools/nullgrid HOME="$srcdir" python -m nullgrid theme palette --preset crimson-hud --format vtrgb > vtrgb
+}
+
+check() {
+  [ "$(wc -l < vtrgb)" = 3 ]
+  for f in plymouth-theme/nullgrid.plymouth plymouth-theme/nullgrid.script plymouth-theme/logo-22.png; do
+    [ -s "$f" ] || { echo "missing $f"; return 1; }
+  done
+  sh -n config/greetd/nullgrid-login
+}
+
+package() {
+  install -Dm644 -t "$pkgdir/usr/share/plymouth/themes/nullgrid" plymouth-theme/*
+  install -Dm644 vtrgb "$pkgdir/usr/share/nullgrid/console/vtrgb"
+  install -Dm644 config/console/nullgrid-console-palette.service \
+    "$pkgdir/usr/lib/systemd/system/nullgrid-console-palette.service"
+  install -Dm755 config/greetd/nullgrid-login "$pkgdir/usr/bin/nullgrid-login"
+  install -Dm644 -t "$pkgdir/usr/share/nullgrid/sessions" config/greetd/sessions/*.desktop
+  install -Dm644 config/greetd/greetd.toml "$pkgdir/usr/share/nullgrid/greetd/greetd.toml"
+  install -Dm644 config/greetd/greetd.service.conf "$pkgdir/usr/lib/systemd/system/greetd.service.d/nullgrid.conf"
+  install -Dm644 config/greetd/tuigreet.toml "$pkgdir/etc/tuigreet/config.toml"
+}

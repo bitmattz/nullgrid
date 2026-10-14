@@ -13,6 +13,7 @@ Singleton {
     readonly property var pinned: [
         { icon: "terminal", label: "Terminal", desc: "kitty", app: "kitty", cmd: "kitty" },
         { icon: "files", label: "Files", desc: "yazi file manager", app: "nullgrid-files", cmd: "kitty --class nullgrid-files yazi" },
+        { icon: "globe", label: "Browser", desc: "firefox", app: "firefox", cmd: "firefox" },
         { icon: "editor", label: "Editor", desc: "neovim", app: "nullgrid-editor", cmd: "kitty --class nullgrid-editor nvim" },
         { icon: "monitor", label: "Monitor", desc: "btop resource monitor", app: "nullgrid-btop", cmd: "kitty --class nullgrid-btop btop" },
         { icon: "dashboard", label: "Dashboard", desc: "NULLGRID system dashboard", app: "nullgrid-dash", cmd: "kitty --class nullgrid-dash nullgrid-dash" },

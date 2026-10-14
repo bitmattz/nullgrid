@@ -2,7 +2,7 @@
 # defaults, the session launcher, and the wallpaper tooling. The look and the keybinds are
 # generated per user by nullgrid-core from nullgrid.toml.
 pkgname=nullgrid-desktop
-pkgver=0.6.0
+pkgver=0.7.0
 pkgrel=1
 pkgdesc="NULLGRID desktop session: Hyprland with a Sway fallback, HUD wallpaper"
 arch=('any')
@@ -17,7 +17,13 @@ depends=(
   'brightnessctl'                      # brightness keys and the bar's brightness control
   'wireplumber'                        # wpctl: the volume keys (nullgrid-media)
   'grim' 'slurp' 'wl-clipboard' 'libnotify'   # nullgrid-screenshot
+  'adw-gtk-theme'                      # base of the generated NULLGRID GTK theme
+  'adwaita-icon-theme'                 # icons the NULLGRID icon theme doesn't draw (symbolic ones)
+  'qt6ct'                              # Qt apps follow the theme (QT_QPA_PLATFORMTHEME=qt6ct)
+  'dconf' 'gsettings-desktop-schemas'  # GTK reads its theme, icons, cursor and fonts from here
 )
+optdepends=('firefox: web browser (SUPER+W)' 'thunar: GUI file manager' 'ristretto: image viewer'
+            'zathura-pdf-mupdf: PDF viewer')
 source=('nullgrid-src.tar')
 sha256sums=('SKIP')
 
@@ -34,6 +40,14 @@ package() {
   install -Dm644 -t "$pkgdir/usr/share/nullgrid/logo" assets/logo/nullgrid.svg assets/logo/nullgrid-small.svg
   # the os-release LOGO=nullgrid icon
   install -Dm644 assets/logo/nullgrid.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/nullgrid.svg"
+  # GTK defaults (theme, icons, cursor, fonts, dark style); users' values come from nullgrid
+  install -Dm644 config/glib/90_nullgrid.gschema.override \
+    "$pkgdir/usr/share/glib-2.0/schemas/90_nullgrid.gschema.override"
+  # default apps in the NULLGRID sessions (XDG_CURRENT_DESKTOP Hyprland / sway)
+  install -Dm644 config/xdg/mimeapps.list "$pkgdir/etc/xdg/hyprland-mimeapps.list"
+  install -Dm644 config/xdg/mimeapps.list "$pkgdir/etc/xdg/sway-mimeapps.list"
+  # Firefox: no first-run pages or telemetry, dark UI following the GTK theme
+  install -Dm644 config/firefox/policies.json "$pkgdir/etc/firefox/policies/policies.json"
   install -Dm644 /dev/stdin "$pkgdir/usr/share/wayland-sessions/nullgrid.desktop" <<DESKTOP
 [Desktop Entry]
 Name=NULLGRID

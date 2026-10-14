@@ -1,0 +1,21 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DontCheckDefaultBrowser": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "UserMessaging": {
+      "WhatsNew": false,
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "MoreFromMozilla": false,
+      "SkipOnboarding": true
+    },
+    "Preferences": {
+      "browser.theme.toolbar-theme": { "Value": 2, "Status": "default" },
+      "browser.theme.content-theme": { "Value": 0, "Status": "default" },
+      "widget.gtk.overlay-scrollbars.enabled": { "Value": true, "Status": "default" }
+    }
+  }
+}

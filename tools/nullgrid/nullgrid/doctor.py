@@ -7,12 +7,13 @@ import subprocess
 from dataclasses import dataclass
 
 from . import config as cfgmod
-from . import render
-from . import sound
+from . import icons, render, sound, toolkit
 from .paths import Paths
 
 OK, INFO, WARN, FAIL = "ok", "info", "warn", "FAIL"
 MIN_CONTRAST = 4.5  # WCAG AA for body text
+ADW_GTK3 = "/usr/share/themes/adw-gtk3-dark/gtk-3.0/gtk.css"
+PLYMOUTH_THEME = "/usr/share/plymouth/themes/nullgrid"
 
 
 @dataclass
@@ -128,6 +129,11 @@ def run(paths: Paths) -> list[Check]:
             if not shutil.which(tool):
                 add(WARN, f"{tool} not found (package {pkg}): no wallpaper")
 
+    # -- GTK / Qt / icons / cursors -----------------------------------------
+    if shutil.which("Hyprland") or shutil.which("sway"):
+        _toolkit_checks(paths, add)
+    _boot_checks(add)
+
     # -- sound --------------------------------------------------------------
     snd = settings.config["sound"]
     where = sound.find_pack(paths, snd["pack"])
@@ -162,6 +168,54 @@ def run(paths: Paths) -> list[Check]:
     else:
         add(INFO, "no graphical session (TTY mode or SSH)")
     return out
+
+
+def _toolkit_checks(paths: Paths, add) -> None:
+    if not os.path.isfile(ADW_GTK3):
+        add(WARN, "GTK theme base missing (package adw-gtk-theme): GTK apps won't look like NULLGRID")
+    try:
+        spec = toolkit.load_spec(paths)
+    except toolkit.ToolkitError:
+        return  # reported above as "not generated yet"
+    d = toolkit.theme_dir(paths)
+    stamp = d / ".nullgrid-icons"
+    if not stamp.is_file() or stamp.read_text().strip() != icons.stamp(spec):
+        add(WARN, f"icon theme in {d} is missing or out of date. Run: nullgrid toolkit apply")
+    elif not (d / "cursors" / "default").is_file():
+        add(WARN, "cursors not generated (needs rsvg-convert, package librsvg). Run: nullgrid toolkit apply")
+    else:
+        add(OK, f"icon theme and cursors in {d}")
+    if toolkit.settings_available() is None:
+        current = toolkit.current_settings()
+        differ = [key for name, key in toolkit.SETTINGS.items()
+                  if name in spec and key in current and current[key] != toolkit._gvariant(spec[name])]
+        if differ:
+            add(WARN, f"GTK settings differ from nullgrid.toml: {', '.join(differ)}. Run: nullgrid toolkit apply")
+        else:
+            add(OK, "GTK settings (theme, icons, cursor, fonts) match")
+    if os.environ.get("WAYLAND_DISPLAY"):
+        if os.environ.get("QT_QPA_PLATFORMTHEME") != "qt6ct":
+            add(WARN, "QT_QPA_PLATFORMTHEME is not qt6ct in this session: Qt apps won't follow the theme")
+        elif not shutil.which("qt6ct"):
+            add(WARN, "qt6ct is not installed: Qt apps won't follow the theme")
+
+
+def _boot_checks(add) -> None:
+    if not os.path.isdir(PLYMOUTH_THEME):
+        return
+    theme = ""
+    for f in ("/etc/plymouth/plymouthd.conf", "/usr/share/plymouth/plymouthd.defaults"):
+        try:
+            for line in open(f):
+                if line.strip().startswith("Theme="):
+                    theme = line.strip().split("=", 1)[1]
+        except OSError:
+            continue
+        if theme:
+            break
+    if theme != "nullgrid":
+        add(INFO, f"boot splash is {theme or 'not set'!r}, not NULLGRID's. Set it: "
+                  "sudo plymouth-set-default-theme -R nullgrid")
 
 
 def exit_code(checks: list[Check]) -> int:

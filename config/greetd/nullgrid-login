@@ -1,0 +1,11 @@
+#!/bin/sh
+# nullgrid-login desktop|tty
+# What the greeter (greetd + tuigreet) starts: the login shell on this console, told which mode
+# was picked. zsh then runs the first-login setup and starts the desktop or the TTY dashboard
+# (see _ng_session in /usr/share/nullgrid/zsh/nullgrid.zsh). Leaving the desktop ends the
+# session and brings the greeter back.
+case ${1:-} in
+    desktop|tty) export NULLGRID_SESSION_MODE=$1 ;;
+    *) echo "usage: nullgrid-login desktop|tty" >&2; exit 2 ;;
+esac
+exec zsh -l

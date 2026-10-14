@@ -1,0 +1,16 @@
+# The NULLGRID colors on every Linux console from early boot (the greeter, boot messages, TTY
+# mode before login). Users' own theme colors are applied at their login on top of this.
+[Unit]
+Description=NULLGRID console palette
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Before=sysinit.target getty@tty1.service greetd.service
+ConditionPathExists=/usr/share/nullgrid/console/vtrgb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/setvtrgb /usr/share/nullgrid/console/vtrgb
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

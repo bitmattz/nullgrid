@@ -1,0 +1,15 @@
+# NULLGRID defaults for GTK apps (nullgrid-desktop). `nullgrid toolkit apply` writes the per-user
+# values (fonts and cursor size from nullgrid.toml); these cover users who never ran it.
+[org.gnome.desktop.interface]
+gtk-theme='NULLGRID'
+icon-theme='NULLGRID'
+cursor-theme='NULLGRID'
+cursor-size=24
+color-scheme='prefer-dark'
+font-name='Rajdhani Medium 11'
+monospace-font-name='JetBrains Mono 11'
+enable-animations=true
+
+[org.gnome.desktop.wm.preferences]
+# client-side decorated windows: just a close button (the compositor tiles, there's no minimize)
+button-layout=':close'

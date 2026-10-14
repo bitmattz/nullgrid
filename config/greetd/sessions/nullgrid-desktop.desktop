@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=NULLGRID desktop
+Comment=Hyprland HUD desktop (Sway as fallback)
+Exec=nullgrid-login desktop
+Type=Application

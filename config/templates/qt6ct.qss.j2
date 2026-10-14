@@ -1,0 +1,56 @@
+{#- Style sheet on top of Fusion: square/neon frames like the GTK theme. -#}
+{% set r = 6 if style.corners == "round" else 0 %}
+{{ header("/*", "*/") }}
+
+QPushButton, QToolButton, QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, QTextEdit, QPlainTextEdit {
+    border: 1px solid {{ c.primary.mix(c.bg, 0.7) }};
+    border-radius: {{ r }}px;
+    background-color: {{ c.surface }};
+    color: {{ c.text }};
+    padding: 3px 8px;
+}
+QPushButton:hover, QToolButton:hover, QComboBox:hover { border-color: {{ c.primary }}; }
+QPushButton:pressed, QPushButton:checked, QToolButton:checked {
+    background-color: {{ c.primary.mix(c.bg, 0.75) }};
+    border-color: {{ c.primary }};
+    color: {{ c.primary }};
+}
+QPushButton:default { border-color: {{ c.primary }}; }
+QPushButton:disabled, QToolButton:disabled { color: {{ c.dim }}; border-color: {{ c.dim.mix(c.bg, 0.6) }}; }
+QToolButton { border-color: transparent; background-color: transparent; }
+QLineEdit:focus, QSpinBox:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus { border-color: {{ c.primary }}; }
+
+QMenu, QToolTip {
+    background-color: {{ c.surface }};
+    color: {{ c.text }};
+    border: 1px solid {{ c.primary.mix(c.bg, 0.5) }};
+    border-radius: {{ r }}px;
+}
+QMenu::item { padding: 4px 18px; }
+QMenu::item:selected { background-color: {{ c.primary.mix(c.bg, 0.2) }}; color: {{ c.bg }}; }
+QMenu::separator { height: 1px; background: {{ c.dim.mix(c.bg, 0.5) }}; margin: 4px 8px; }
+
+QTabBar::tab { padding: 5px 14px; border: none; background: transparent; color: {{ c.dim }}; }
+QTabBar::tab:selected { color: {{ c.primary }}; border-bottom: 2px solid {{ c.primary }}; }
+QTabBar::tab:hover { color: {{ c.text }}; }
+
+QHeaderView::section {
+    background-color: {{ c.surface }};
+    color: {{ c.primary }};
+    border: none;
+    border-bottom: 1px solid {{ c.primary.mix(c.bg, 0.6) }};
+    padding: 4px 8px;
+}
+
+QProgressBar { border: 1px solid {{ c.primary.mix(c.bg, 0.6) }}; border-radius: {{ r }}px; text-align: center; background: {{ c.bg }}; }
+QProgressBar::chunk { background-color: {{ c.primary }}; width: 6px; margin: 1px; }
+
+QScrollBar:vertical { width: 8px; background: transparent; }
+QScrollBar:horizontal { height: 8px; background: transparent; }
+QScrollBar::handle { background: {{ c.dim.mix(c.bg, 0.3) }}; border-radius: {{ r }}px; min-height: 24px; min-width: 24px; }
+QScrollBar::handle:hover { background: {{ c.primary }}; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+QGroupBox { border: 1px solid {{ c.primary.mix(c.bg, 0.7) }}; border-radius: {{ r }}px; margin-top: 12px; }
+QGroupBox::title { subcontrol-origin: margin; left: 8px; color: {{ c.primary }}; }

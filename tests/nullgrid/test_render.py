@@ -12,10 +12,11 @@ from nullgrid import config, render
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 UPDATE = os.environ.get("NULLGRID_UPDATE_SNAPSHOTS") == "1"
 ALL_TARGETS = {"kitty", "hyprland", "hyprland-keys", "sway", "sway-keys", "wallpaper", "hyprlock", "sfx",
-               "quickshell", "fuzzel", "btop", "nvim", "gtk", "qt", "tty", "shell-env", "starship",
+               "quickshell", "fuzzel", "btop", "nvim", "toolkit", "gtk", "gtk-dark", "gtk4", "qt", "qt-style",
+               "qt6ct", "zathura", "tty", "shell-env", "starship",
                "starship-tty", "fastfetch", "tmux", "yazi", "yazi-tty", "lazygit", "cava", "cava-tty", "banner"}
 N = len(ALL_TARGETS)
-SHARED_RELOADS = 2  # hyprland + hyprland-keys, sway + sway-keys: one reload each
+SHARED_RELOADS = 5  # hyprland(-keys), sway(-keys), toolkit + gtk + gtk-dark + gtk4: one reload each
 
 
 def rendered(paths, config_text=""):
@@ -159,6 +160,8 @@ def test_reload_command_and_gates(monkeypatch):
     assert render.run_reload(target(reload=["true"], env="NG_TEST")) is True
     assert render.run_reload(target(reload=["true"], env="NG_TEST=b")) is None
     assert render.run_reload(target(reload=["true"], process="kitty")) is None  # not running
+    # {target} is the generated file; other braces (awk, shell) pass through untouched
+    assert render.run_reload(target(reload=["sh", "-c", "test {target} = /tmp/x && echo '{x}' | awk '{print $1}'"])) is True
 
 
 def test_reload_signal(monkeypatch):

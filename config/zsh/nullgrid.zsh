@@ -131,13 +131,16 @@ if [[ -o login ]]; then
 fi
 
 # --- session -------------------------------------------------------------------
-# Login on tty1 starts the configured mode (nullgrid mode desktop|tty).
+# Login on tty1 starts the configured mode (nullgrid mode desktop|tty). A login from the greeter
+# (nullgrid-login) brings the mode picked there in NULLGRID_SESSION_MODE, on whatever console.
 # Desktop mode: Hyprland (or Sway, see nullgrid-session); TTY mode or no desktop: the dashboard.
 _ng_session() {
-  if [[ $NULLGRID_MODE == desktop ]] && (( $+commands[nullgrid-session] )); then
+  local mode=${NULLGRID_SESSION_MODE:-$NULLGRID_MODE}
+  if [[ $mode == desktop ]] && (( $+commands[nullgrid-session] )); then
     nullgrid-session
     case $? in
-      0) print -P "%F{$NULLGRID_ANSI_DIM}left the desktop; run nullgrid-session to start it again%f"; return ;;
+      0) [[ -n $NULLGRID_SESSION_MODE ]] && exit  # back to the greeter
+         print -P "%F{$NULLGRID_ANSI_DIM}left the desktop; run nullgrid-session to start it again%f"; return ;;
       1) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop could not start; starting TTY mode. Details: nullgrid doctor%f"
          read -s -k 1 -t 10 "?press a key (or wait 10 s)" ;;
       *) print -P "%F{$NULLGRID_ANSI_WARNING}the desktop stopped with an error (logs: ~/.local/state/nullgrid/session-*.log)%f"; return ;;
@@ -145,7 +148,8 @@ _ng_session() {
   fi
   (( $+commands[nullgrid-dash] )) && nullgrid-dash
 }
-if [[ -o login && $TTY == /dev/tty1 && -z $WAYLAND_DISPLAY && -z $TMUX && -z $NULLGRID_NO_SESSION ]]; then
+if [[ -o login && ( $TTY == /dev/tty1 || -n $NULLGRID_SESSION_MODE ) && -z $WAYLAND_DISPLAY && -z $TMUX \
+      && -z $NULLGRID_NO_SESSION ]]; then
   _ng_session
 fi
 

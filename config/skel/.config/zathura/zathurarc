@@ -1,0 +1,4 @@
+# zathura settings. The colors come from nullgrid (generated, follows the theme):
+include nullgrid-theme
+
+set selection-clipboard clipboard

@@ -1,16 +1,17 @@
 # NULLGRID theme engine and the `nullgrid` CLI, plus the theme presets and app templates.
 # Sources come from the repo checkout: build/build-packages.sh drops nullgrid-src.tar here.
 pkgname=nullgrid-core
-pkgver=0.6.0
+pkgver=0.7.0
 pkgrel=1
 pkgdesc="NULLGRID theme engine and nullgrid command"
 arch=('any')
 url="https://github.com/bitmattz/nullgrid"
 license=('MIT')
 depends=('python' 'python-jinja' 'python-tomlkit')
-optdepends=('librsvg: wallpaper as PNG (rsvg-convert)' 'swaybg: show the wallpaper')
+optdepends=('librsvg: wallpaper as PNG and the cursors (rsvg-convert)' 'swaybg: show the wallpaper'
+            'glib2: desktop settings for GTK apps (gsettings)')
 makedepends=('python-build' 'python-installer' 'python-flit-core')
-checkdepends=('python-pytest')
+checkdepends=('python-pytest' 'librsvg')
 source=('nullgrid-src.tar')
 sha256sums=('SKIP')
 

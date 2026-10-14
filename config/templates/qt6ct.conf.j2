@@ -1,0 +1,36 @@
+{#- qt6ct's own settings: Fusion + the NULLGRID palette, style sheet, icons and fonts. qt6ct
+    watches its directory, so running Qt apps restyle when this file is replaced. -#}
+{% macro qfont(family, size, weight) -%}
+"{{ family }},{{ size }},-1,5,{{ weight }},0,0,0,0,0,0,0,0,0,0,1"
+{%- endmacro %}
+{{ header("#") }}
+
+[Appearance]
+color_scheme_path=~/.config/qt6ct/colors/nullgrid.conf
+custom_palette=true
+icon_theme=NULLGRID
+standard_dialogs=default
+style=Fusion
+
+[Fonts]
+fixed={{ qfont(fonts.mono, fonts.mono_size, 400) }}
+general={{ qfont(fonts.ui, fonts.size, 500) }}
+
+[Interface]
+activate_item_on_single_click=1
+buttonbox_layout=0
+cursor_flash_time=1000
+dialog_buttons_have_icons=1
+double_click_interval=400
+gui_effects=@Invalid()
+keyboard_scheme=2
+menus_have_icons=true
+show_shortcuts_in_context_menus=true
+stylesheets=~/.config/qt6ct/qss/nullgrid.qss
+toolbutton_style=4
+underline_shortcut=1
+wheel_scroll_lines=3
+
+[NULLGRID]
+# changes with the theme, so qt6ct notices (it watches this directory, not colors/ or qss/)
+revision={{ [c.bg, c.bg_alt, c.surface, c.primary, c.secondary, c.glow, c.text, c.dim, c.warning] | map(attribute="bare") | join("") }}-{{ style.corners }}-{{ (style.glow * 100) | int }}

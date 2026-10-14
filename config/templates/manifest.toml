@@ -1,6 +1,6 @@
 # Generated files: one table per target. Field reference: tools/nullgrid/nullgrid/render.py
 # Override or extend in ~/.config/nullgrid/templates/manifest.toml (same format;
-# `enabled = false` turns a target off). Placeholders: {config_home} {config_dir} {home}.
+# `enabled = false` turns a target off). Placeholders: {config_home} {config_dir} {data_home} {home}.
 #
 # Apps that can't hot-reload a file pick it up when they next start; their configs
 # (written in later phases) include these fragments rather than being generated whole.
@@ -72,13 +72,50 @@ target = "{config_home}/btop/themes/nullgrid.theme"
 template = "nvim-palette.lua.j2"
 target = "{config_home}/nvim/lua/nullgrid/palette.lua"
 
+[toolkit]
+# Input of `nullgrid toolkit apply`: icon theme + cursors in ~/.local/share/icons/NULLGRID/
+# (generated in the theme colors), and the desktop settings GTK reads (gsettings).
+template = "toolkit.json.j2"
+target = "{config_dir}/generated/toolkit.json"
+reload = ["nullgrid", "toolkit", "apply", "--reload", "--quiet"]
+
 [gtk]
-template = "gtk-colors.css.j2"
-target = "{config_dir}/generated/gtk-colors.css"
+# The NULLGRID GTK theme. GTK re-reads a theme only when its name changes; the toolkit hook
+# (same command, so it runs once) flips the name and back.
+template = "gtk3.css.j2"
+target = "{data_home}/themes/NULLGRID/gtk-3.0/gtk.css"
+reload = ["nullgrid", "toolkit", "apply", "--reload", "--quiet"]
+
+[gtk-dark]
+# GTK 3 loads this one when an app asks for the dark variant
+template = "gtk3.css.j2"
+target = "{data_home}/themes/NULLGRID/gtk-3.0/gtk-dark.css"
+reload = ["nullgrid", "toolkit", "apply", "--reload", "--quiet"]
+
+[gtk4]
+template = "gtk4.css.j2"
+target = "{data_home}/themes/NULLGRID/gtk-4.0/gtk.css"
+reload = ["nullgrid", "toolkit", "apply", "--reload", "--quiet"]
 
 [qt]
 template = "qt6ct-colors.conf.j2"
 target = "{config_home}/qt6ct/colors/nullgrid.conf"
+
+[qt-style]
+template = "qt6ct.qss.j2"
+target = "{config_home}/qt6ct/qss/nullgrid.qss"
+
+[qt6ct]
+# Written last of the Qt files: qt6ct sees this directory change and restyles running apps.
+template = "qt6ct.conf.j2"
+target = "{config_home}/qt6ct/qt6ct.conf"
+
+[zathura]
+# Included by ~/.config/zathura/zathurarc. Running viewers re-read it over D-Bus (`:source`).
+template = "zathura.j2"
+target = "{config_home}/zathura/nullgrid-theme"
+process = "zathura"
+reload = ["sh", "-c", "for n in $(busctl --user list --no-legend | awk '/^org.pwmt.zathura/ {print $1}'); do busctl --user call $n /org/pwmt/zathura org.pwmt.zathura ExecuteCommand s source; done"]
 
 [tty]
 # Linux console palette. Sourced at TTY login; applied immediately when

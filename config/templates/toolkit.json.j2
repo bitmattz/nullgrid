@@ -1,0 +1,13 @@
+{#- Input of `nullgrid toolkit apply`: the icon theme, the cursors and the desktop settings
+    GTK apps read (gsettings org.gnome.desktop.interface). -#}
+{
+  "gtk_theme": "NULLGRID",
+  "icon_theme": "NULLGRID",
+  "cursor_theme": "NULLGRID",
+  "cursor_size": {{ style.cursor_size }},
+  "font": {{ (fonts.ui ~ " Medium " ~ fonts.size) | json }},
+  "mono_font": {{ (fonts.mono ~ " " ~ fonts.mono_size) | json }},
+  "color_scheme": "{{ 'prefer-dark' if c.bg.luminance < 0.4 else 'prefer-light' }}",
+  "colors": {{ {"bg": c.bg, "surface": c.surface, "primary": c.primary, "secondary": c.secondary,
+                "dim": c.dim, "text": c.text} | json(2) | indent(2) }}
+}

@@ -1,0 +1,17 @@
+{
+  "gtk_theme": "NULLGRID",
+  "icon_theme": "NULLGRID",
+  "cursor_theme": "NULLGRID",
+  "cursor_size": 24,
+  "font": "Rajdhani Medium 11",
+  "mono_font": "JetBrains Mono 11",
+  "color_scheme": "prefer-dark",
+  "colors": {
+    "bg": "#1a0b0f",
+    "dim": "#7a8a8f",
+    "primary": "#5ef2f2",
+    "secondary": "#ff3b4e",
+    "surface": "#24111a",
+    "text": "#e6f7f7"
+  }
+}

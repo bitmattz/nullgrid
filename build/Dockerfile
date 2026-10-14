@@ -9,6 +9,8 @@ RUN pacman -Syu --noconfirm --needed \
         python-build python-installer python-flit-core python-numpy lua \
         qemu-base qemu-hw-display-virtio-vga qemu-hw-display-virtio-gpu edk2-ovmf \
         quickshell sway swaybg grim librsvg hyprlock dbus libnotify ttf-jetbrains-mono \
+        adw-gtk-theme adwaita-icon-theme qt6ct dconf gsettings-desktop-schemas thunar zathura \
+        zathura-pdf-mupdf greetd-tuigreet \
     && pacman -Scc --noconfirm
 
 # makepkg refuses to run as root, so packages are built as this user.

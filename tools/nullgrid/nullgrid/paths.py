@@ -7,6 +7,7 @@ System data (presets, templates, the default config) comes from, in order:
   3. /usr/share/nullgrid            installed layout
 User files follow XDG: ~/.config/nullgrid/{nullgrid.toml,themes/,templates/,keybinds/},
 sound packs in ~/.local/share/nullgrid/sounds/, and ~/.local/state/nullgrid/ for bookkeeping.
+The generated GTK theme, icon theme and cursors go to ~/.local/share/{themes,icons}/NULLGRID/.
 User themes, templates, keybind sets and sound packs shadow system ones by name. Rendered
 wallpapers are cached in ~/.cache/nullgrid/.
 """
@@ -29,6 +30,7 @@ class Paths:
     skel: Path                  # default dotfiles, copied into $HOME by `nullgrid init`
     config_home: Path           # $XDG_CONFIG_HOME
     config_dir: Path            # ~/.config/nullgrid
+    data_home: Path             # $XDG_DATA_HOME
     state_dir: Path             # ~/.local/state/nullgrid
     cache_dir: Path             # ~/.cache/nullgrid
 
@@ -86,6 +88,7 @@ def resolve() -> Paths:
         skel=skel,
         config_home=config_home,
         config_dir=config_dir,
+        data_home=_xdg("XDG_DATA_HOME", ".local/share"),
         state_dir=_xdg("XDG_STATE_HOME", ".local/state") / "nullgrid",
         cache_dir=_xdg("XDG_CACHE_HOME", ".cache") / "nullgrid",
     )

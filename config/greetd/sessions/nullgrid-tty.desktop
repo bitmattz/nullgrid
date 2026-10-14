@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=NULLGRID terminal
+Comment=TTY mode: console, TUI dashboard, tmux
+Exec=nullgrid-login tty
+Type=Application

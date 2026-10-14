@@ -107,7 +107,7 @@ def load_manifest(paths: Paths) -> list[Target]:
             name=name,
             template=entry["template"],
             path=Path(entry["target"].format(config_home=paths.config_home, config_dir=paths.config_dir,
-                                             home=Path.home())).expanduser(),
+                                             data_home=paths.data_home, home=Path.home())).expanduser(),
             process=entry["process"], signal=entry["signal"], reload=entry["reload"],
             env=entry["env"], terminal=entry["terminal"], mode=int(entry["mode"], 8),
             vars=entry["vars"],
@@ -390,7 +390,7 @@ def run_reload(t: Target) -> bool | None:
             except OSError:
                 pass
         return sent
-    argv = [a.format(target=t.path) for a in t.reload]
+    argv = [a.replace("{target}", str(t.path)) for a in t.reload]  # (commands may contain other braces)
     if shutil.which(argv[0]) is None:
         return None
     out = None if t.terminal else subprocess.DEVNULL

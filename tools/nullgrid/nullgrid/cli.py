@@ -16,6 +16,7 @@ from . import keybinds as kbmod
 from . import paths as pathmod
 from . import render
 from . import sound
+from . import toolkit
 from . import wallpaper
 
 # --------------------------------------------------------------------------- output
@@ -218,6 +219,47 @@ def cmd_wallpaper_apply(args, paths) -> None:
             print(f"{out.name} {out.width}x{out.height}: {png}")
 
 
+# --------------------------------------------------------------------------- toolkit
+def cmd_toolkit_apply(args, paths) -> None:
+    try:
+        toolkit.load_spec(paths)
+    except toolkit.ToolkitError:
+        render.apply(cfgmod.load(paths), paths, reload="none")  # first run: generate it
+    res = toolkit.apply(paths, reload=args.reload, force=args.force)
+    if args.quiet:
+        return
+    print(f"icons: {'regenerated' if res.icons else 'up to date'} ({toolkit.theme_dir(paths)})")
+    print(f"cursors: {'changed' if res.cursors else 'up to date'}")
+    if res.settings:
+        print(f"desktop settings written: {', '.join(res.settings)}")
+    if res.reloaded:
+        print(f"reloaded: {', '.join(res.reloaded)}")
+    for note in res.notes:
+        print(paint("note:", "warn"), note)
+
+
+def cmd_theme_palette(args, paths) -> None:
+    if args.preset:
+        found = cfgmod.find_theme(paths, args.preset)
+        if found is None:
+            raise Fail(f"no theme named {args.preset!r} (see: nullgrid theme list)")
+        theme = cfgmod.load_theme(found)
+    else:
+        theme = cfgmod.load(paths).theme
+    term = theme["colors"]["terminal"]
+    slots = [term[f"color{i}"] for i in range(16)]
+    if args.format == "vtrgb":
+        # setvtrgb(8): one line each of red, green and blue values for the 16 console colors
+        for channel in range(3):
+            print(",".join(str(col.tuple[channel]) for col in slots))
+    else:
+        for name, value in theme["colors"].items():
+            if name != "terminal":
+                print(f"{name:<10} {value.hex}")
+        for i, col in enumerate(slots):
+            print(f"color{i:<5} {col.hex}")
+
+
 # --------------------------------------------------------------------------- sound
 def cmd_sound_list(args, paths) -> None:
     try:
@@ -413,6 +455,10 @@ def build_parser() -> argparse.ArgumentParser:
     r = tsub.add_parser("reload", help="regenerate every config and reload running apps")
     r.add_argument("--dry-run", action="store_true", help="only show which files would change")
     r.set_defaults(func=cmd_theme_reload)
+    pal = tsub.add_parser("palette", help="print a theme's colors (or the console palette for setvtrgb)")
+    pal.add_argument("--preset", help="this theme instead of the active one")
+    pal.add_argument("--format", choices=("list", "vtrgb"), default="list")
+    pal.set_defaults(func=cmd_theme_palette)
 
     k = sub.add_parser("keys", help="list the desktop keybinds")
     k.add_argument("--pause", action="store_true", help="wait for Enter before exiting (for a popup window)")
@@ -427,6 +473,14 @@ def build_parser() -> argparse.ArgumentParser:
     wa = wpsub.add_parser("apply", help="render for each screen of this session and show it (swaybg)")
     wa.add_argument("-q", "--quiet", action="store_true")
     wa.set_defaults(func=cmd_wallpaper_apply)
+
+    tk = sub.add_parser("toolkit", help="GTK/Qt apps, icons and cursors: generate and apply")
+    tksub = tk.add_subparsers(dest="action", required=True, metavar="ACTION")
+    ta = tksub.add_parser("apply", help="regenerate icons/cursors if needed and write the desktop settings")
+    ta.add_argument("--reload", action="store_true", help="also make running GTK apps re-read the theme")
+    ta.add_argument("--force", action="store_true", help="regenerate icons and cursors even if up to date")
+    ta.add_argument("-q", "--quiet", action="store_true")
+    ta.set_defaults(func=cmd_toolkit_apply)
 
     snd = sub.add_parser("sound", help="sound packs, test sounds, mute")
     ssub = snd.add_subparsers(dest="action", required=True, metavar="ACTION")
@@ -478,7 +532,7 @@ def main(argv: list[str] | None = None) -> int:
         err("fix the problems above, or run: nullgrid doctor")
     except render.RenderError as exc:
         err(f"rendering failed, no files were changed: {exc}")
-    except (Fail, wallpaper.WallpaperError) as exc:
+    except (Fail, wallpaper.WallpaperError, toolkit.ToolkitError) as exc:
         err(str(exc))
     except KeyboardInterrupt:
         return 130

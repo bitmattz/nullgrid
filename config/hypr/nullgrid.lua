@@ -5,11 +5,10 @@
 
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
 
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")  -- Qt apps follow the theme (generated qt6ct config)
 
 hl.config({
     general = { layout = "dwindle", resize_on_border = true },
@@ -66,6 +65,7 @@ hl.on("hyprland.start", function()
     -- D-Bus activated services (notifications, portals) need to find this session.
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("nullgrid wallpaper apply --quiet")
+    hl.exec_cmd("nullgrid toolkit apply --quiet")  -- icons, cursors, GTK settings (cheap when up to date)
     hl.exec_cmd("nullgrid-shell")  -- bar, dock, HUD widgets, start menu, notifications
     hl.exec_cmd("nullgrid-sfx daemon")  -- UI sounds; exits with the session
 end)

@@ -1,0 +1,55 @@
+# tuigreet, NULLGRID style (nullgrid-boot). Colors are console color names: the console runs the
+# crimson-hud palette (nullgrid-console-palette.service), so "cyan" is the neon accent and "red"
+# the hot red. F2 commands, F3 sessions (desktop or terminal mode), F12 power, F4 background.
+
+[session]
+sessions_dirs = ["/usr/share/nullgrid/sessions"]
+command = "nullgrid-login desktop"
+
+[display]
+show_time = true
+time_format = "%Y-%m-%d %H:%M"
+show_title = true
+custom_title = " NULLGRID // NODE ACCESS "
+greeting = "SYSTEM LOCKED // AUTHENTICATION REQUIRED"
+align_greeting = "center"
+
+[remember]
+username = true
+user_session = true
+
+[secret]
+mode = "characters"
+characters = "■"
+
+[layout]
+width = 64
+window_padding = 2
+container_padding = 2
+prompt_padding = 1
+
+[power]
+shutdown = "systemctl poweroff"
+reboot = "systemctl reboot"
+use_setsid = true
+
+[theme]
+border = "cyan"
+title = "cyan"
+text = "white"
+greet = "red"
+prompt = "cyan"
+input = "white"
+time = "red"
+action = "red"
+button = "cyan"
+container = "black"
+
+[background]
+kind = "matrix"
+fps = 12
+
+[background.matrix]
+head_color = "white"
+bright_color = "cyan"
+dim_color = "darkgray"
