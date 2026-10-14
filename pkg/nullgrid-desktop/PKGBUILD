@@ -2,7 +2,7 @@
 # defaults, the session launcher, and the wallpaper tooling. The look and the keybinds are
 # generated per user by nullgrid-core from nullgrid.toml.
 pkgname=nullgrid-desktop
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc="NULLGRID desktop session: Hyprland with a Sway fallback, HUD wallpaper"
 arch=('any')

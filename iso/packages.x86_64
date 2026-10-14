@@ -52,6 +52,8 @@ nullgrid-desktop
 nullgrid-sfx
 # boot splash, greeter and console colors (nullgrid-boot)
 nullgrid-boot
+# installer (nullgrid-install) and first-run wizard (nullgrid-welcome)
+nullgrid-installer
 
 ## Terminal experience (also pulled in by nullgrid-terminal; listed so the ISO's contents are explicit)
 # main terminal emulator (GPU-rendered, live config reload)
@@ -159,3 +161,9 @@ plymouth
 # greeter for installed systems (the live ISO logs in automatically; not enabled here)
 greetd
 greetd-tuigreet
+
+## Installer (nullgrid-install copies this live system to a disk; pulled in by nullgrid-installer)
+# arch-chroot: runs locale-gen, useradd, mkinitcpio, bootctl inside the new system
+arch-install-scripts
+# mkfs.fat for the /boot partition (EFI system partition)
+dosfstools

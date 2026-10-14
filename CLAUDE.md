@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-14: Phase 7 DONE, next is Phase 8
+### Status as of 2026-10-14: Phase 8 DONE, next is Phase 9
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -433,8 +433,44 @@ it as generated SVG plus a simplified small-size variant; the moving hole animat
 - Plymouth's script language: no reliable number->string formatting; spell names out in generated
   arrays. `plymouthd --no-daemon` + `plymouth show-splash` under Xvfb uses the X11 renderer.
 
-**Next step, Phase 8 (installer):** themed TUI installer (`nullgrid-install`, gum/whiptail or
-archinstall), disk/user/locale/keyboard/timezone/GPU drivers (Intel/AMD/NVIDIA, hybrid), then a
-first-run wizard (theme, sound pack, mode). It must: enable greetd (disable tty1 autologin), set
-`plymouth-set-default-theme nullgrid`, add `kms consolefont plymouth` hooks, kernel params
-`quiet splash fbcon=nodefer`, enable `nullgrid-console-palette.service`.
+**Phase 8 delivered:**
+- Package `nullgrid-installer` (`tools/installer/nullgrid_install/`, Python/Textual): `nullgrid-install`
+  (TUI; `--config FILE [--yes]` unattended, `--dry-run`, `--list-disks`, `--detect`) and
+  `nullgrid-welcome` (first-run wizard: theme applied live, sound pack with samples, mode;
+  `--theme/--sound/--mode` for scripts, `--status`). Modules: `hw` (lsblk disks, sysfs GPUs,
+  `driver_plan`), `options` (keyboard table console keymap <-> XKB, locales, zones), `config`
+  (`InstallConfig`, TOML, validation), `install` (`Installer` steps over a `System`; tests use a fake).
+- Install = copy `/run/archiso/airootfs` (pristine squashfs) to the disk, kernel from
+  `/usr/lib/modules/*/vmlinuz`, remove `LIVE_ONLY` files, userdel the live user. GPT: 1 GiB FAT32
+  /boot (ESP + LegacyBIOSBootable) + ext4 / (optional LUKS2, `encrypt` hook, passphrase in the
+  splash). Both systemd-boot (UEFI, + fallback path) and syslinux/extlinux (BIOS, gptmbr.bin).
+  mkinitcpio `kms consolefont plymouth` (+`encrypt`), default+fallback preset, `quiet splash
+  fbcon=nodefer`, serial console kept if the live boot had one. greetd + console palette enabled,
+  root locked, wheel sudo with password, own pacman keyring, `/etc/nullgrid/installed` marker,
+  `/etc/nullgrid/install-notes` (e.g. GPU drivers skipped offline), log copied to /var/log.
+- GPU: Intel `vulkan-intel intel-media-driver`, AMD `vulkan-radeon`, NVIDIA >= Turing (dev id >=
+  0x1e00) `nvidia-open nvidia-utils` (+`nvidia-prime` hybrid, modules in initramfs if NVIDIA drives
+  the screen), older NVIDIA `vulkan-nouveau`; only network need. `nullgrid-session` sets NVIDIA env
+  vars when NVIDIA is the boot GPU, and XKB_DEFAULT_* from `/etc/X11/xorg.conf.d/00-keyboard.conf`
+  (Hyprland reads them via os.getenv; Sway config no longer hardcodes `us`).
+- zsh: first console login of an installed system runs `nullgrid-welcome` before the session.
+  Live ISO: start-menu entry (`/usr/local/share/applications/nullgrid-install.desktop`, live-only),
+  dashboard launcher `install`, login hint. ISO adds `arch-install-scripts dosfstools`.
+- `run-vm.sh --disk=FILE [--hd]`; `make test-install [ENCRYPT=1]` (`tests/install_smoke.py`):
+  unattended install from the ISO, boots the disk UEFI (checks, greeter login, wizard -> TTY
+  mode) and BIOS. `make test` = 246 (incl. `tests/nullgrid_install`). All packages 0.8.0
+  (fonts/base unchanged). Docs: `docs/INSTALL.md`, phase-8 section in DECISIONS.
+
+**Gotchas learned (phase 8):**
+- `cp -a` onto a mounted FAT /boot fails (can't set owner/mode of the mount point): mount /boot
+  after copying the system.
+- Textual: Option prompts are markup (`[text]` vanishes; pass `Text`); a theme registered in
+  `on_mount` may need `refresh_css()`; a second click on a Button within 0.2 s is ignored (tests
+  use `button.press()`). Inputs/Buttons/Checkboxes default to half-block borders: override for the console.
+- `tests/nullgrid_install/insttest.py` holds the shared helpers (several conftest.py exist).
+- Every new file in `iso/airootfs` must be listed in `install.LIVE_ONLY` or `install.KEEP` (test).
+- The live ISO runs `LANG=C.UTF-8`, which isn't in glibc's SUPPORTED list: default to en_US.UTF-8.
+- Serial checks strip each line: no trailing spaces in expected regexes.
+
+**Next step, Phase 9 (polish & performance):** measure idle RAM/CPU (desktop < 700 MB in a 4 GB
+VM, widgets < 2% CPU), boot time; fix; finish docs. Then the Raspberry Pi image builder (DECISIONS).

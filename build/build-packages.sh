@@ -8,7 +8,7 @@ set -euo pipefail
 
 src=/src
 repo="$src/out/repo"
-order=(nullgrid-base nullgrid-fonts nullgrid-core nullgrid-sfx nullgrid-dash nullgrid-terminal nullgrid-desktop nullgrid-boot)
+order=(nullgrid-base nullgrid-fonts nullgrid-core nullgrid-sfx nullgrid-dash nullgrid-terminal nullgrid-desktop nullgrid-boot nullgrid-installer)
 
 mkdir -p "$repo"
 rm -f "$repo"/*.pkg.tar.* "$repo"/nullgrid.*
@@ -24,7 +24,7 @@ pacman -Sy --noconfirm >/dev/null
 # The repo code (not only pkg/<name>) goes into each build dir as a source tarball.
 tarball=$(mktemp --suffix=.tar)
 tar -C "$src" -cf "$tarball" --exclude=__pycache__ --exclude=.pytest_cache \
-    tools themes config assets shell plymouth tests/nullgrid tests/nullgrid_dash tests/nullgrid_sfx
+    tools themes config assets shell plymouth tests/nullgrid tests/nullgrid_dash tests/nullgrid_sfx tests/nullgrid_install iso/airootfs
 
 names=("${order[@]}")
 for dir in "$src"/pkg/*/; do

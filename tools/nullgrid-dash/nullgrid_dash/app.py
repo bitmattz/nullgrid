@@ -120,7 +120,9 @@ def launcher_entries() -> list[Entry]:
         ("nmtui", "network", ["nmtui"], False),
         ("fastfetch", "sysinfo", ["fastfetch"], True),
     ]
-    found = [c for c in candidates if shutil.which(c[2][0])]
+    if Path("/run/archiso").is_dir():  # the live ISO: offer the installer
+        candidates.append(("install", "to disk", ["sudo", "nullgrid-install"], False))
+    found = [c for c in candidates if shutil.which(c[2][-1] if c[2][0] == "sudo" else c[2][0])]
     return [Entry(str(i), label, hint, argv, pause) for i, (label, hint, argv, pause) in enumerate(found, 1)]
 
 

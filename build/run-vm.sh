@@ -10,11 +10,14 @@
 #     --vga=TYPE  another QEMU display adapter instead of virtio-gpu, to test other drivers:
 #               vmware (vmwgfx, like VirtualBox's VMSVGA), std (bochs), qxl
 #     --audio-wav=FILE  record the VM's sound card output to a WAV file (the boot test does)
+#     --disk=FILE  attach FILE as a virtio disk (qcow2; created with DISK_SIZE, default 24G, if
+#               missing): the target for nullgrid-install
+#     --hd      boot the --disk instead of the ISO (an installed system)
 # Env: MEM (default 4G), CPUS (default 2), AUDIO (QEMU audio backend for the VM's sound card:
 #      default pa when the host has a PulseAudio/PipeWire socket, else none)
 set -euo pipefail
 
-uefi=1 serial=0 gl=0 iso="" monitor="" vga="" wav=""
+uefi=1 serial=0 gl=0 iso="" monitor="" vga="" wav="" disk="" hd=0
 for arg in "$@"; do
     case "$arg" in
         --bios) uefi=0 ;;
@@ -23,16 +26,20 @@ for arg in "$@"; do
         --vga=*) vga=${arg#--vga=} ;;
         --monitor=*) monitor=${arg#--monitor=} ;;
         --audio-wav=*) wav=${arg#--audio-wav=} ;;
+        --disk=*) disk=${arg#--disk=} ;;
+        --hd) hd=1 ;;
         -*) echo "unknown option: $arg" >&2; exit 2 ;;
         *) iso="$arg" ;;
     esac
 done
 
 here=$(cd "$(dirname "$0")/.." && pwd)
-if [[ -z "$iso" ]]; then
+if (( hd )); then
+    [[ -n "$disk" ]] || { echo "--hd needs --disk=FILE" >&2; exit 2; }
+elif [[ -z "$iso" ]]; then
     iso=$(ls -t "$here"/out/nullgrid-*.iso 2>/dev/null | head -n1 || true)
 fi
-[[ -f "$iso" ]] || { echo "no ISO found; run 'make iso' first" >&2; exit 1; }
+(( hd )) || [[ -f "$iso" ]] || { echo "no ISO found; run 'make iso' first" >&2; exit 1; }
 
 command -v qemu-system-x86_64 >/dev/null || {
     echo "qemu-system-x86_64 not found. Debian/Ubuntu: sudo apt install qemu-system-x86 ovmf" >&2
@@ -52,9 +59,18 @@ else
 fi
 
 args=(-m "${MEM:-4G}" -smp "${CPUS:-2}" -machine q35
-      -cdrom "$iso" -boot d
       -device virtio-net-pci,netdev=n0 -netdev user,id=n0
       -audiodev "$audio" -device intel-hda -device hda-output,audiodev=snd0)
+
+if [[ -n "$disk" ]]; then
+    [[ -f "$disk" ]] || qemu-img create -q -f qcow2 "$disk" "${DISK_SIZE:-24G}"
+    args+=(-drive "file=$disk,if=virtio,format=qcow2")
+fi
+if (( hd )); then
+    args+=(-boot c)
+else
+    args+=(-cdrom "$iso" -boot d)
+fi
 
 if [[ -w /dev/kvm ]]; then
     args+=(-enable-kvm -cpu host)

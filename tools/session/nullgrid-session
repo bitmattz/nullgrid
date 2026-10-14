@@ -48,6 +48,31 @@ software_render && export NULLGRID_SOFTWARE_RENDER=1
 # No render node at all (simpledrm/efifb): Sway uses its pixman renderer.
 ls /dev/dri/renderD* >/dev/null 2>&1 || export WLR_RENDERER=pixman
 export XDG_SESSION_TYPE=wayland
+
+# Keyboard layout: the system's (nullgrid-install / `localectl set-x11-keymap` write it to
+# 00-keyboard.conf), as XKB_DEFAULT_* for Sway; Hyprland's NULLGRID config reads them too.
+kbconf=/etc/X11/xorg.conf.d/00-keyboard.conf
+if [ -r "$kbconf" ]; then
+    xkb() { sed -n "s/^[[:space:]]*Option[[:space:]]*\"$1\"[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$kbconf" | head -n1; }
+    for pair in XKB_DEFAULT_LAYOUT:XkbLayout XKB_DEFAULT_VARIANT:XkbVariant XKB_DEFAULT_MODEL:XkbModel XKB_DEFAULT_OPTIONS:XkbOptions; do
+        var=${pair%%:*}
+        eval "current=\${$var:-}"
+        value=$(xkb "${pair#*:}")
+        [ -z "$current" ] && [ -n "$value" ] && export "$var=$value"
+    done
+fi
+
+# NVIDIA's driver drives the screen (not a hybrid laptop, where the integrated GPU does):
+# VA-API and GLX go to NVIDIA too.
+if [ -d /sys/module/nvidia_drm ]; then
+    for card in /sys/class/drm/card[0-9]*; do
+        case ${card##*/} in *-*) continue ;; esac
+        [ "$(cat "$card/device/boot_vga" 2>/dev/null)" = 1 ] || continue
+        if [ "$(cat "$card/device/vendor" 2>/dev/null)" = 0x10de ]; then
+            export LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-nvidia} __GLX_VENDOR_LIBRARY_NAME=${__GLX_VENDOR_LIBRARY_NAME:-nvidia}
+        fi
+    done
+fi
 # Qt apps follow the theme through qt6ct (Sway can't set environment variables itself).
 export QT_QPA_PLATFORMTHEME=qt6ct
 # The console login set these to the console variants of the apps; the desktop has the real thing.

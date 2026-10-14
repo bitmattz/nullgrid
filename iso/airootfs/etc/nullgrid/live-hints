@@ -1,3 +1,4 @@
   LIVE SESSION   network: nmtui   admin: sudo works without a password
   DESKTOP        nullgrid-session   SUPER+ENTER terminal   SUPER+/ all keybinds
+  INSTALL        sudo nullgrid-install   (desktop: start menu > Install NULLGRID)
   CUSTOMIZE      nullgrid theme list | set <name> | edit     nullgrid mode tty|desktop

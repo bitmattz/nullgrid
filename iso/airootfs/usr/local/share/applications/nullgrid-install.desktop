@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install NULLGRID
+Comment=Install the live system to a disk
+Exec=kitty --class nullgrid-installer -e sudo nullgrid-install
+Icon=nullgrid
+Terminal=false
+Categories=System;

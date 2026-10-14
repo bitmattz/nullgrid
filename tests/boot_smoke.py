@@ -58,6 +58,10 @@ CHECKS = [
     ("ls ~/.local/share/themes/NULLGRID/gtk-3.0/gtk.css ~/.local/share/icons/NULLGRID/cursors/default"
      " ~/.config/qt6ct/qt6ct.conf | wc -l", r"3"),
     ("ls /usr/share/plymouth/themes/nullgrid/*.png | wc -l", r"[1-9]\d+"),
+    # phase 8: the installer is offered (make test-install runs it)
+    ("nullgrid-install --version", r"nullgrid-install \d+\.\d+\.\d+"),
+    ("nullgrid-dash --check | grep -o 'apps=.*' | grep -o install", r"install"),
+    ("nullgrid-install --detect | head -1", r"firmware\s+(uefi|bios)"),
 ]
 # Phase 4: the desktop on tty1. ENV points this serial shell at the session's compositor.
 ENV = ("export XDG_RUNTIME_DIR=/run/user/$(id -u); "

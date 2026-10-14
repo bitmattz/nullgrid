@@ -130,6 +130,17 @@ if [[ -o login ]]; then
   [[ -r /etc/nullgrid/live-hints ]] && cat /etc/nullgrid/live-hints  # only on the live ISO
 fi
 
+# --- first boot of an installed system: theme, sound pack, mode (nullgrid-welcome) ----
+# Once per user, on a console login (the greeter's or tty1), before the session starts.
+if [[ -o login && $TTY == /dev/tty[0-9]* && -z $WAYLAND_DISPLAY && -r /etc/nullgrid/installed \
+      && ! -e $XDG_STATE_HOME/nullgrid/welcomed && -z $NULLGRID_NO_SESSION ]] && (( $+commands[nullgrid-welcome] )); then
+  nullgrid-welcome
+  # the mode picked there wins over the greeter's for this login
+  [[ -r $XDG_CONFIG_HOME/nullgrid/generated/shell-env.sh ]] && source $XDG_CONFIG_HOME/nullgrid/generated/shell-env.sh
+  [[ -n $NULLGRID_SESSION_MODE ]] && export NULLGRID_SESSION_MODE=$NULLGRID_MODE
+  [[ $TERM == linux && -r $XDG_CONFIG_HOME/nullgrid/generated/tty-palette.sh ]] && source $XDG_CONFIG_HOME/nullgrid/generated/tty-palette.sh
+fi
+
 # --- session -------------------------------------------------------------------
 # Login on tty1 starts the configured mode (nullgrid mode desktop|tty). A login from the greeter
 # (nullgrid-login) brings the mode picked there in NULLGRID_SESSION_MODE, on whatever console.

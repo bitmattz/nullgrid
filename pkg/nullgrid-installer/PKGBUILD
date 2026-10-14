@@ -1,0 +1,38 @@
+# NULLGRID installer (nullgrid-install: live ISO -> disk) and first-run wizard (nullgrid-welcome).
+# Python/Textual, like the dashboard. The install copies the live image, so it needs no network.
+pkgname=nullgrid-installer
+pkgver=0.8.0
+pkgrel=1
+pkgdesc="NULLGRID installer and first-run wizard"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=(
+  'python' 'python-textual'
+  'nullgrid-core' 'nullgrid-dash'      # theme engine (the wizard applies themes); TUI theme helpers
+  'arch-install-scripts'               # arch-chroot
+  'util-linux' 'e2fsprogs' 'dosfstools' 'cryptsetup'   # sfdisk, wipefs, lsblk; mkfs.ext4; mkfs.fat; LUKS2
+  'systemd'                            # bootctl (systemd-boot, UEFI)
+  'syslinux'                           # extlinux (BIOS)
+  'hwdata'                             # GPU names (pci.ids)
+)
+makedepends=('python-build' 'python-installer' 'python-flit-core')
+checkdepends=('python-pytest')
+source=('nullgrid-src.tar')
+sha256sums=('SKIP')
+
+build() {
+  cd tools/installer
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  python -c "import sys; sys.path.insert(0, 'tools/installer'); import nullgrid_install as i; \
+    assert i.__version__ == '$pkgver', 'pkgver and nullgrid_install.__version__ differ'"
+  PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/nullgrid_install
+}
+
+package() {
+  cd tools/installer
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -4,13 +4,14 @@ A lightweight, terminal-first Arch Linux distro with a cyberpunk HUD look:
 dark crimson, neon cyan, chamfered frames, live system widgets and subtle UI sounds.
 It's meant to run on old ThinkPads, Raspberry Pis (planned) and DIY cyberdecks.
 
-> Status: **phase 7 (full visual coverage)**. The ISO boots through an animated Plymouth splash
+> Status: **phase 8 (installer)**. The ISO boots through an animated Plymouth splash
 > into a Hyprland desktop (Sway as fallback and lite session) with the NULLGRID shell: status bar,
 > dock, HUD widgets, start menu, notifications and a HUD lock screen, over a generated wallpaper,
 > with synthesized UI sounds on PipeWire. GTK and Qt apps (Firefox, Thunar, zathura...), the icon
 > theme and the mouse pointer follow the theme too, live. TTY mode gives a themed dashboard
-> instead, and installed systems get a matching text greeter. Everything is styled from one TOML
-> file by the `nullgrid` tool. The installer comes next (see `CLAUDE.md` section 9).
+> instead. `nullgrid-install` puts the system on a disk (offline, optional encryption, UEFI and
+> BIOS) with a text greeter and a first-run wizard. Everything is styled from one TOML file by the
+> `nullgrid` tool. Polish and performance come next (see `CLAUDE.md` section 9).
 
 ## Screenshots
 
@@ -30,6 +31,8 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software ren
 | **GUI apps**: Firefox and Thunar in the NULLGRID GTK theme and icons | **The same apps** after `nullgrid theme set toxic-grid`, restyled while running |
 | ![Boot splash](docs/screenshots/boot-splash.png) | ![Greeter](docs/screenshots/greeter.png) |
 | **Boot splash** (Plymouth): the dead pixel wanders the lattice, a fake boot log scrolls | **Greeter** (installed systems): tuigreet over matrix rain; F3 picks desktop or terminal mode |
+| ![First-run wizard](docs/screenshots/first-boot-welcome.png) | |
+| **First boot** of an installed system (`make test-install`): theme, sound pack, mode | |
 
 ## Quick start
 
@@ -41,7 +44,11 @@ make sounds      # synthesize the sound packs into out/sounds (Docker)
 make test-shell  # the shell + GTK/Qt apps in a headless Sway: QML errors, live restyle (Docker)
 make splash      # preview the Plymouth boot splash (Docker) -> out/screens/splash-*.png
 make test-boot   # headless boot test; needs only Docker
+make test-install  # install the ISO to a virtual disk and boot it (UEFI + BIOS); Docker
 ```
+
+Installing: boot the ISO, then start menu → *Install NULLGRID*, or `sudo nullgrid-install`.
+See [docs/INSTALL.md](docs/INSTALL.md).
 
 ```sh
 nullgrid theme list               # crimson-hud, ice-protocol, toxic-grid
@@ -64,6 +71,7 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [SOUND.md](docs/SOUND.md): UI sounds, events, sound packs
 - [TOOLKITS.md](docs/TOOLKITS.md): GTK and Qt apps, icons, cursors
 - [BOOT.md](docs/BOOT.md): boot splash, greeter, console colors
+- [INSTALL.md](docs/INSTALL.md): installing to a disk, GPU drivers, first-run wizard
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo

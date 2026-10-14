@@ -14,7 +14,11 @@ hl.config({
     general = { layout = "dwindle", resize_on_border = true },
     dwindle = { preserve_split = true },
     input = {
-        kb_layout = "us",
+        -- the system keyboard layout (nullgrid-session reads it from 00-keyboard.conf)
+        kb_layout = os.getenv("XKB_DEFAULT_LAYOUT") or "us",
+        kb_variant = os.getenv("XKB_DEFAULT_VARIANT") or "",
+        kb_model = os.getenv("XKB_DEFAULT_MODEL") or "",
+        kb_options = os.getenv("XKB_DEFAULT_OPTIONS") or "",
         follow_mouse = 1,
         touchpad = { natural_scroll = false, tap_to_click = true, disable_while_typing = true },
     },
@@ -50,6 +54,13 @@ hl.window_rule({
     match = { class = "^nullgrid-(keys|dash|btop)$" },
     float = true,
     size = "960 640",
+    center = true,
+})
+hl.window_rule({
+    name = "nullgrid-installer",
+    match = { class = "^nullgrid-installer$" },
+    float = true,
+    size = "1120 720",
     center = true,
 })
 

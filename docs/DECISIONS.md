@@ -375,6 +375,59 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
 - Manifest commands now only expand `{target}` (a zathura reload command contains awk braces).
 - All NULLGRID packages except fonts and base are 0.7.0; new package `nullgrid-boot`.
 
+## Phase 8
+
+- **Offline install by copying the live image**, not `archinstall`/`pacstrap`. The installer copies
+  `/run/archiso/airootfs` (the squashfs under the live overlay, so nothing done in the live session
+  leaks in), takes the kernel from `/usr/lib/modules/*/vmlinuz` (archiso keeps its copy outside
+  the image), then removes the live-only files. Why: no network or mirrors needed, minutes instead
+  of a download of ~2 GB, and the installed system is byte-for-byte what was tested live (our own
+  packages live in a local repo that only exists at build time anyway). archinstall would have
+  needed a hosted `[nullgrid]` repo. Cost: the list of live-only files must be kept up to date;
+  `tests/nullgrid_install` fails when a file in `iso/airootfs` is in neither `LIVE_ONLY` nor `KEEP`.
+- **One disk layout, no choices:** GPT, 1 GiB FAT32 `/boot` (ESP), ext4 `/`, optional LUKS2.
+  Dual boot, manual partitioning, btrfs and swap are left out; the target is a whole old laptop
+  or cyberdeck disk. 1 GiB fits the default and the fallback initramfs (the fallback, without
+  autodetection, is ~200 MB) plus an NVIDIA one.
+- **Both boot loaders on every disk:** systemd-boot (UEFI) and syslinux/extlinux (BIOS) share the
+  FAT `/boot` partition, which carries the GPT "legacy BIOS bootable" attribute, with syslinux's
+  `gptmbr.bin` in the MBR. A disk installed on a UEFI machine boots on a BIOS one and back, and
+  no GRUB is needed (syslinux is on the ISO already). `bootctl` also installs the fallback
+  `EFI/BOOT/BOOTX64.EFI`, so firmware that loses its NVRAM entries (and the test VMs, which start
+  with fresh variables) still boots. If writing the UEFI entry fails, it retries with
+  `--no-variables`.
+- **Initramfs like the live one:** busybox `udev` hooks with `kms consolefont plymouth` (see the
+  phase-7 race) plus `encrypt`, which asks for the passphrase through Plymouth's prompt. Kernel
+  options `quiet splash fbcon=nodefer`; a fallback entry with `plymouth.enable=0`. When the live
+  system was booted with a serial console, the installed one keeps it (`console=ttyS0`), which is
+  how the install test logs in.
+- **TUI in Python/Textual** (like the dashboard) rather than gum/whiptail: the install logic is a
+  Python module whose side effects all go through a `System` object, so the whole plan runs in
+  tests against a fake one (commands recorded, files real in a temp dir). The TUI is a thin layer
+  over the same `InstallConfig`; `--config FILE` is the unattended path (used by the install
+  test), `--dry-run` prints the plan. Passwords only ever go to stdin (`chpasswd`, `cryptsetup
+  --key-file -`), never into argv or the log. Console-safe glyphs only, checked by a test.
+- **Users:** one user in `wheel` (+ video, audio, input), zsh, `sudo` with password; root locked.
+- **GPU drivers are the only download.** Mesa covers Intel/AMD/nouveau offline. "Recommended" adds
+  Vulkan/VA packages, and the NVIDIA driver (`nvidia-open`) from Turing (PCI device id >= 0x1e00)
+  on. Hybrid laptops get `nvidia-prime` and keep the integrated GPU as the display GPU. NVIDIA
+  isn't put on the ISO (nvidia-utils alone is ~950 MB installed). Offline, the install continues
+  and leaves the command in `/etc/nullgrid/install-notes`, which the first-run wizard shows.
+  GPUs are read from sysfs (no pciutils), named from hwdata's `pci.ids`.
+- **Keyboard: one choice, two layers.** A curated table maps each console keymap to its XKB layout
+  (tests check both exist). The XKB side goes to `/etc/X11/xorg.conf.d/00-keyboard.conf`, the file
+  `localectl` maintains; `nullgrid-session` turns it into `XKB_DEFAULT_*`, which Sway uses (its
+  NULLGRID config no longer hardcodes `us`) and Hyprland's config reads with `os.getenv`.
+- **First-run wizard `nullgrid-welcome`:** runs once per user on the first console login of an
+  installed system (`/etc/nullgrid/installed` exists), before the session starts, so the mode it
+  sets applies to that login. Picking a theme applies it immediately: the console or terminal
+  around the wizard restyles, a live preview. A highlighted sound pack plays a sample. It only
+  calls the `nullgrid` CLI. The live ISO never runs it.
+- **The live ISO offers the installer** in the start menu (a `.desktop` file in airootfs, removed
+  on install), in the dashboard's launcher and in the login hints.
+- New package `nullgrid-installer` (with `arch-install-scripts` and `dosfstools` on the ISO). All
+  NULLGRID packages except fonts and base are 0.8.0.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

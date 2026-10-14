@@ -1,3 +1,3 @@
 """NULLGRID TTY dashboard: system status and a launcher for terminal apps."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

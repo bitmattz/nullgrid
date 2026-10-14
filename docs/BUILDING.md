@@ -19,7 +19,7 @@ The host does **not** need to run Arch. `make check-host` reports what's missing
 | `make repo` | builds every `pkg/*/PKGBUILD` into the local pacman repo `out/repo/` |
 | `make iso` | `repo`, then `mkarchiso` → `out/nullgrid-YYYY.MM.DD-x86_64.iso` |
 | `make run` / `run-bios` / `run-gl` | boot the newest ISO in QEMU: UEFI / legacy BIOS / UEFI + virgl 3D (smoother desktop; without it Mesa renders in software) |
-| `make test` | unit + snapshot tests of `nullgrid`, `nullgrid-sfx` (incl. the generated sounds) and `nullgrid-dash`, in the builder container |
+| `make test` | unit + snapshot tests of `nullgrid`, `nullgrid-sfx` (incl. the generated sounds), `nullgrid-dash` and the installer (the whole install plan against a fake system, the TUI and the first-run wizard through Textual's pilot), in the builder container |
 | `make sounds` | synthesizes the sound packs into `out/sounds/` (`nullgrid sound test` in a checkout plays them); the `nullgrid-sfx` package does the same at build time |
 | `make test-shell` | runs the desktop shell (Quickshell) in a headless Sway inside Docker: fails on QML errors, checks its IPC, the start menu, a live theme switch, and the sound daemon (a stand-in `pw-play` logs which sounds the shell, Sway and `nullgrid sound mute` cause). Then opens Thunar (GTK 3), zathura (GTK 4) and a Qt window, checks by their pixels that they take the theme's colors and follow a theme switch live, and that the GTK theme parses cleanly. Screenshots go to `out/screens/shell-*.png` |
 | `make splash` | builds the Plymouth theme and runs it with Plymouth's X11 renderer in a virtual X server: `out/screens/splash-*.png` (boot, password prompt, shutdown); fails on script errors |
@@ -30,10 +30,14 @@ sound comes out; the volume key; GTK settings, icons, cursor and Qt environment;
 Firefox across a theme switch), Sway via the lite profile, TTY mode (the dashboard), and the
 greeter (greetd on tty3: logs in and picks TTY mode). Screen grabs during boot must show the
 Plymouth splash (`out/screens/boot-splash.png`). Screenshots of each go to `out/screens/` |
+| `make test-install` | boots the ISO with a blank 24 GB virtual disk, installs to it unattended (`nullgrid-install --config`), then boots the installed disk with UEFI and checks it over serial (no live leftovers, greeter, keyboard/locale/time zone, sudo with a password, keyring, splash in the initramfs), logs in through the greeter on tty1 and takes the first-run wizard into TTY mode, then boots the disk with legacy BIOS. `ENCRYPT=1` installs with LUKS and types the passphrase into the splash. Screenshots: `out/screens/installed-*.png`. Needs ~10 GB free for the disk image |
 | `make shell` | interactive shell inside the builder |
 | `make clean` / `distclean` | remove `out/` / also the Docker work volume |
 
 `run-vm.sh` honours `MEM` (default `4G`) and `CPUS` (default `2`), e.g. `MEM=2G make run`.
+To try the installer by hand: `build/run-vm.sh --disk=out/disk.qcow2` (creates a 24 GB disk,
+`DISK_SIZE` to change), install, power off, then `build/run-vm.sh --disk=out/disk.qcow2 --hd`
+boots the installed system (add `--bios` for legacy BIOS).
 The VM gets an Intel HDA sound card; with a GUI its output goes to the host's PulseAudio or
 PipeWire (`AUDIO=none make run` mutes it, `AUDIO=alsa` picks another QEMU audio backend).
 
