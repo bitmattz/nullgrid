@@ -1,0 +1,28 @@
+# Trust the NULLGRID signing key and add the [nullgrid] repository to pacman.conf, so
+# `pacman -Syu` updates NULLGRID like the rest of the system.
+
+_section='
+# NULLGRID updates (added by nullgrid-keyring): signed packages, see /etc/pacman.d/nullgrid-mirrorlist
+[nullgrid]
+SigLevel = Required DatabaseRequired
+Include = /etc/pacman.d/nullgrid-mirrorlist'
+
+post_install() {
+    post_upgrade
+}
+
+post_upgrade() {
+    # the keyring exists on a running system; while an image is being built it may not yet
+    # (the live ISO's pacman-init and the installer populate all keyrings later)
+    if [ -f /etc/pacman.d/gnupg/pubring.gpg ] || [ -f /etc/pacman.d/gnupg/pubring.kbx ]; then
+        pacman-key --populate nullgrid >/dev/null
+    fi
+    if ! grep -q '^\[nullgrid\]' /etc/pacman.conf; then
+        printf '%s\n' "$_section" >> /etc/pacman.conf
+        echo ":: added the [nullgrid] repository to /etc/pacman.conf"
+    fi
+}
+
+post_remove() {
+    echo ":: the [nullgrid] section in /etc/pacman.conf stays; remove it by hand if you want"
+}

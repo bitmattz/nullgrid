@@ -1,0 +1,3 @@
+# NULLGRID package repository (nullgrid-keyring). The packages and the database are signed with
+# the key in /usr/share/pacman/keyrings/nullgrid.gpg.
+Server = https://github.com/bitmattz/nullgrid/releases/download/repo

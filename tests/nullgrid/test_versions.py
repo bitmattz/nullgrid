@@ -4,7 +4,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 VERSION = (REPO / "VERSION").read_text().strip()
-# nullgrid-fonts versions the bundled upstream fonts, not NULLGRID
+# nullgrid-fonts versions the bundled upstream fonts, nullgrid-keyring its key set (by date)
 OWN_VERSION = ["nullgrid-base", "nullgrid-core", "nullgrid-sfx", "nullgrid-dash", "nullgrid-terminal",
                "nullgrid-desktop", "nullgrid-boot", "nullgrid-installer"]
 
@@ -17,7 +17,7 @@ def test_packages_match():
     found = {name: re.search(r"^pkgver=(\S+)", (REPO / "pkg" / name / "PKGBUILD").read_text(), re.M).group(1)
              for name in OWN_VERSION}
     assert found == {name: VERSION for name in OWN_VERSION}
-    assert set(OWN_VERSION) | {"nullgrid-fonts"} == {p.name for p in (REPO / "pkg").iterdir() if p.is_dir()}
+    assert set(OWN_VERSION) | {"nullgrid-fonts", "nullgrid-keyring"} == {p.name for p in (REPO / "pkg").iterdir() if p.is_dir()}
 
 
 def test_tools_match():

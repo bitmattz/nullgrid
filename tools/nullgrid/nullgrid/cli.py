@@ -416,6 +416,56 @@ def cmd_doctor(args, paths) -> int:
     return code
 
 
+# --------------------------------------------------------------------------- update
+WATCH = {"hyprland": "Hyprland was updated: log out and back in to run the new one",
+         "linux": "the kernel was updated: reboot to use it",
+         "quickshell": None, "nullgrid-desktop": None}
+
+
+def _installed(names) -> dict[str, str]:
+    out = subprocess.run(["pacman", "-Q", *names], capture_output=True, text=True).stdout
+    return dict(line.split()[:2] for line in out.splitlines() if len(line.split()) >= 2)
+
+
+def cmd_update(args, paths) -> int:
+    before = _installed(WATCH)
+    if not args.no_system:
+        cmd = ["sudo", "pacman", "-Syu"] + (["--noconfirm"] if args.yes else [])
+        print(paint(f"$ {' '.join(cmd)}", "dim"))
+        if subprocess.run(cmd).returncode != 0:
+            raise Fail("the system update failed or was cancelled; nothing else was changed")
+    after = _installed(WATCH)
+    changed = [n for n in WATCH if before.get(n) != after.get(n)]
+
+    print(paint("refreshing your NULLGRID configs", "head"))
+    report = dotfiles.install(paths)
+    if not paths.config_file.is_file():
+        cfgmod.ConfigDocument(paths).save()
+    result = render.apply(cfgmod.load(paths), paths)
+    paths.init_marker.parent.mkdir(parents=True, exist_ok=True)
+    paths.init_marker.touch()
+    for f in report.copied:
+        print(f"  + {f}")
+    print_report(result)
+
+    # the running desktop shell picks up new QML only when restarted
+    if os.environ.get("WAYLAND_DISPLAY") and shutil.which("nullgrid-shell") and \
+            ("quickshell" in changed or "nullgrid-desktop" in changed or args.restart_shell):
+        subprocess.run(["nullgrid-shell", "restart"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("restarted the desktop shell")
+    for name in changed:
+        if WATCH[name]:
+            print(paint("note:", "warn"), WATCH[name])
+
+    checks = doctor.run(paths)
+    problems = [c for c in checks if c.level in (doctor.WARN, doctor.FAIL)]
+    for c in problems:
+        print(f"[{paint(c.level.center(4), c.level)}] {c.message}")
+    print(paint("up to date" if not problems else f"{len(problems)} problem(s): see nullgrid doctor",
+                "head" if not problems else "warn"))
+    return doctor.exit_code(checks)
+
+
 # --------------------------------------------------------------------------- init
 def cmd_init(args, paths) -> None:
     report = dotfiles.install(paths, overwrite=args.reset)
@@ -516,6 +566,12 @@ def build_parser() -> argparse.ArgumentParser:
     i.add_argument("--reset", action="store_true", help="also replace dotfiles you already have (.bak copies are kept)")
     i.add_argument("-q", "--quiet", action="store_true")
     i.set_defaults(func=cmd_init)
+
+    up = sub.add_parser("update", help="update the system (pacman -Syu), then refresh your NULLGRID configs")
+    up.add_argument("-y", "--yes", action="store_true", help="don't ask pacman's questions (--noconfirm)")
+    up.add_argument("--no-system", action="store_true", help="skip pacman, only refresh the configs")
+    up.add_argument("--restart-shell", action="store_true", help="restart the desktop shell even if it wasn't updated")
+    up.set_defaults(func=cmd_update)
 
     pf = sub.add_parser("perf", help="memory and CPU per NULLGRID component (run as root for exact memory)")
     pf.add_argument("--seconds", type=float, default=10.0, help="how long to measure CPU (default 10)")

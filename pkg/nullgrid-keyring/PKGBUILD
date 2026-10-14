@@ -1,0 +1,25 @@
+# NULLGRID's package signing key and its repository ([nullgrid] in pacman.conf).
+# The version is the date of the key set, like archlinux-keyring. Regenerate the key files with
+# `make sign-key` (they are exported from the private key, which is never in this repo).
+pkgname=nullgrid-keyring
+pkgver=20261014
+pkgrel=1
+pkgdesc="NULLGRID package signing key and update repository"
+arch=('any')
+url="https://github.com/bitmattz/nullgrid"
+license=('MIT')
+depends=('pacman')
+backup=('etc/pacman.d/nullgrid-mirrorlist')
+install=nullgrid-keyring.install
+source=('nullgrid.gpg' 'nullgrid-trusted' 'nullgrid-revoked' 'nullgrid-mirrorlist')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+check() {
+  [ -s nullgrid.gpg ] || { echo "no public key: run make sign-key"; return 1; }
+  grep -Eq '^[0-9A-F]{40}:4:$' nullgrid-trusted
+}
+
+package() {
+  install -Dm644 -t "$pkgdir/usr/share/pacman/keyrings" nullgrid.gpg nullgrid-trusted nullgrid-revoked
+  install -Dm644 nullgrid-mirrorlist "$pkgdir/etc/pacman.d/nullgrid-mirrorlist"
+}

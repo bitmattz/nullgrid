@@ -1,0 +1,9 @@
+# Systems that came from NULLGRID 1.0.0 get the Bluetooth service enabled once, when they first
+# update to 1.1.0 or later (new installs have it enabled from the ISO). Turning it off afterwards
+# sticks: later updates don't touch it.
+post_upgrade() {
+    if [ "$(vercmp "$2" 1.1.0)" -lt 0 ]; then
+        systemctl enable bluetooth.service >/dev/null 2>&1 \
+            && echo ":: enabled the Bluetooth service (it starts when an adapter is present)"
+    fi
+}

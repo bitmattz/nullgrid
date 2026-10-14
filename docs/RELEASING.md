@@ -51,9 +51,36 @@ gh release create v$v --title "NULLGRID OS $v" --notes-file docs/releases/v$v.md
 GitHub takes files up to 2 GiB per release asset; the ISO is ~1.9 GB. If it grows past that,
 split it (`split -b 1900M`) and document joining it, or trim the package list.
 
-## Updates (not yet)
+## 5. The update repository
 
-Installed systems update Arch packages with `pacman -Syu`, but NULLGRID's own packages only
-come with a new ISO. The plan for later (see DECISIONS.md, "Updates"): a signed `[nullgrid]`
-pacman repository on a GitHub release, a `nullgrid-keyring` package, `make publish-repo`, a
-pacman hook that regenerates users' configs, and `nullgrid update`.
+Installed systems update from the `[nullgrid]` repository: the GitHub release `repo` (a
+pre-release, so the latest version release stays "Latest"). Every publish replaces it with the
+current packages, signed.
+
+```sh
+make sign-key        # once per machine that publishes: creates (or re-exports) the key
+make publish-repo    # make repo, sign everything + the database, upload to the 'repo' release
+make test-upgrade    # optional before upload: 1.0.0 ISO -> keyring -> pacman -Syu from out/publish
+```
+
+`make publish-repo` builds and signs into `out/publish/` first (`build/sign-repo.sh`), then
+uploads (`build/publish-repo.sh`, needs `gh`). To test before uploading, run the signing step
+alone (see the Makefile) and `make test-upgrade`.
+
+**Only released versions go in** (the owner's rule): bump `VERSION` first, or pacman sees nothing
+new. Packaging-only fixes bump `pkgrel` of that package.
+
+### The signing key
+
+- Private key: `~/.local/share/nullgrid-signing/` on the publishing machine (no passphrase, mode
+  700), **never in the repo**. Back it up offline: without it, no more updates can be signed,
+  and every system would need a new keyring package installed by hand.
+- Public key: `pkg/nullgrid-keyring/` (committed), shipped by the `nullgrid-keyring` package,
+  fingerprint `3494FF826CBF4E4AB1E83049FD658A9D368049E7`.
+- If it leaks: create a new key, put the old fingerprint in `nullgrid-revoked`, ship the new
+  `nullgrid-keyring` (bump its date version) signed with the old key one last time, announce it.
+
+```sh
+# backup (keep it somewhere safe and offline)
+tar -C ~/.local/share -czf nullgrid-signing-backup.tar.gz nullgrid-signing
+```

@@ -1,7 +1,7 @@
 # NULLGRID sound: the nullgrid-sfx daemon and the sound packs. The packs are synthesized at build
 # time by assets/sounds/generate.py (numpy), so the repo holds no audio files.
 pkgname=nullgrid-sfx
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="NULLGRID sound daemon and generated sound packs"
 arch=('any')

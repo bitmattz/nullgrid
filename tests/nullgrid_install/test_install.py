@@ -228,7 +228,7 @@ def test_install_plan(fake, live):
     assert fake.chrooted("passwd", "--lock", "root")
 
     # boot: keyring, splash, greeter, initramfs, both boot loaders
-    assert fake.chrooted("pacman-key", "--init") and fake.chrooted("pacman-key", "--populate", "archlinux")
+    assert fake.chrooted("pacman-key", "--init") and fake.chrooted("pacman-key", "--populate", "archlinux", "nullgrid")
     assert fake.chrooted("systemctl", "enable", "greetd.service", "nullgrid-console-palette.service")
     assert fake.chrooted("plymouth-set-default-theme", "nullgrid")
     hooks = (mnt / "etc/mkinitcpio.conf.d/nullgrid.conf").read_text()

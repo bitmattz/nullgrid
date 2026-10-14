@@ -341,7 +341,7 @@ class Installer:
 
         # pacman: the live system keeps its keyring in RAM; the installed one gets its own
         self.chroot("pacman-key", "--init")
-        self.chroot("pacman-key", "--populate", "archlinux")
+        self.chroot("pacman-key", "--populate", "archlinux", "nullgrid")   # nullgrid: the update repo
         self._sub(0.8)
 
         # boot and login: splash, greeter (instead of autologin), console palette

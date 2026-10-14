@@ -1,7 +1,7 @@
 # NULLGRID theme engine and the `nullgrid` CLI, plus the theme presets and app templates.
 # Sources come from the repo checkout: build/build-packages.sh drops nullgrid-src.tar here.
 pkgname=nullgrid-core
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="NULLGRID theme engine and nullgrid command"
 arch=('any')
@@ -32,4 +32,6 @@ package() {
   install -Dm644 -t "$pkgdir/usr/share/nullgrid/templates" config/templates/*
   install -Dm644 -t "$pkgdir/usr/share/nullgrid/keybinds" config/keybinds/*.toml
   install -Dm644 config/nullgrid.toml "$pkgdir/usr/share/nullgrid/nullgrid.toml"
+  # after NULLGRID updates, users' configs refresh at their next login
+  install -Dm644 config/pacman/nullgrid-refresh.hook "$pkgdir/usr/share/libalpm/hooks/nullgrid-refresh.hook"
 }

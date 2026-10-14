@@ -209,7 +209,7 @@ nullgrid/
 
 ## 13. Progress log (read this first when resuming)
 
-### Status as of 2026-10-14: v1.0.0 RELEASED (all build phases); next: Raspberry Pi image builder
+### Status as of 2026-10-14: v1.1.0 in the update repository (v1.0.0 = latest ISO release); next: Raspberry Pi image builder
 
 **Decisions already agreed with me (don't ask again):** name NULLGRID; Arch + archiso; Hyprland
 (Sway fallback); Quickshell for the shell UI; kitty; zsh; Python (+ Jinja2) for the CLI, theme
@@ -516,8 +516,25 @@ from wlan0 (wrong password first). Gotchas: polkit only authorizes NetworkManage
 in the active desktop session (a shell restarted from serial gets "Not authorized"); Hyprland
 Lua `hyprctl dispatch` takes Lua (`'hl.dsp...'`), not `exec cmd`; `connectWithPsk` on a saved
 network updates its password (don't `forget()` first: it races); hwsim radios are "unavailable"
-for ~1 s; NM hotspots need dnsmasq. Version still 1.0.0 until the next release (CHANGELOG
-"Unreleased").
+for ~1 s; NM hotspots need dnsmasq. Shipped as 1.1.0.
+
+**Update repository (1.1.0, 2026-10-14):** signed `[nullgrid]` pacman repo = GitHub pre-release
+`repo` (Server `https://github.com/bitmattz/nullgrid/releases/download/repo`). Key: ed25519, no
+passphrase/expiry, fingerprint 3494FF826CBF4E4AB1E83049FD658A9D368049E7, private in
+`~/.local/share/nullgrid-signing` (never in git; owner should back it up). `make sign-key`
+(`build/signing-key.sh`, exports public key to `pkg/nullgrid-keyring/`), `make publish-repo`
+(`make repo` -> `build/sign-repo.sh` in Docker -> `build/publish-repo.sh` with gh; replaces all
+assets). `nullgrid-keyring` (date-versioned) adds `[nullgrid]` (SigLevel Required
+DatabaseRequired) via its install script; on the ISO; installer populates `archlinux nullgrid`.
+`nullgrid-core` ships `nullgrid-refresh.hook` (stamps /var/lib/nullgrid/updated; zsh runs
+`nullgrid init` at next login when newer). `nullgrid update [--yes] [--no-system]
+[--restart-shell]`. `nullgrid-desktop.install` enables bluetooth once when upgrading from <1.1.0.
+`make test-upgrade [FROM=old.iso]` (`tests/upgrade_smoke.py`): installs out/v1.0.0 ISO, keyring,
+pacman -Syu from out/publish served at 10.0.2.2:8080: PASS. Rule: only released versions go into
+the repo (bump VERSION; tag vX.Y.Z; GitHub release page/ISO may come later). Docs: UPDATING.md,
+RELEASING.md section 5. Gotchas: `echo x | sudo -S tee` writes the password (use sh -c); package
+builds aren't reproducible (checksums change per build): publish the files you tested (run
+build/publish-repo.sh directly), and docs verify the key fingerprint, not a package checksum.
 
 **Next (after phase 9):** the Raspberry Pi SD-image builder (`docs/DECISIONS.md`, light hardware
 strategy). Ideas not done: measure on a real GPU / with virgl; Xwayland on demand.

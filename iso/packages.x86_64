@@ -50,6 +50,8 @@ nullgrid-terminal
 nullgrid-desktop
 # sound daemon (nullgrid-sfx) and the generated sound packs
 nullgrid-sfx
+# NULLGRID's signing key + the [nullgrid] update repository in pacman.conf
+nullgrid-keyring
 # boot splash, greeter and console colors (nullgrid-boot)
 nullgrid-boot
 # installer (nullgrid-install) and first-run wizard (nullgrid-welcome)

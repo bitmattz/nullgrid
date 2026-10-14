@@ -1,6 +1,6 @@
 # NULLGRID branding and release info, and system-wide memory settings. Installed on the live ISO and on installed systems.
 pkgname=nullgrid-base
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="NULLGRID OS base: branding (os-release), memory settings"
 arch=('any')

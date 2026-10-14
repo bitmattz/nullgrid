@@ -1,0 +1,13 @@
+# NULLGRID (nullgrid-core): after NULLGRID packages change, every user's generated configs and
+# default dotfiles are brought up to date at their next login (`nullgrid init`, run by zsh when
+# this stamp is newer than theirs). `nullgrid update` does it right away for the current user.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = nullgrid-*
+
+[Action]
+Description = NULLGRID: refreshing users' configs at their next login
+When = PostTransaction
+Exec = /usr/bin/sh -c 'mkdir -p /var/lib/nullgrid && date +%s > /var/lib/nullgrid/updated'

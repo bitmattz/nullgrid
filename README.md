@@ -71,6 +71,7 @@ nullgrid toolkit apply            # GTK settings, icons and pointer (theme set d
 nullgrid mode tty                 # log in to the TTY dashboard instead of the desktop
 nullgrid doctor                   # check config and generated files
 nullgrid perf                     # what the desktop costs: memory and CPU per component
+nullgrid update                   # update the system and NULLGRID (pacman -Syu + refresh)
 ```
 
 See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
@@ -86,7 +87,8 @@ See [docs/BUILDING.md](docs/BUILDING.md) for requirements and details.
 - [BOOT.md](docs/BOOT.md): boot splash, greeter, console colors
 - [INSTALL.md](docs/INSTALL.md): installing to a disk, GPU drivers, first-run wizard
 - [PERFORMANCE.md](docs/PERFORMANCE.md): idle memory/CPU, boot time, how to measure
-- [RELEASING.md](docs/RELEASING.md): how a release is cut; [CHANGELOG.md](CHANGELOG.md)
+- [UPDATING.md](docs/UPDATING.md): `nullgrid update`, and setting up updates on 1.0.0 systems
+- [RELEASING.md](docs/RELEASING.md): how a release is cut and published; [CHANGELOG.md](CHANGELOG.md)
 - [DECISIONS.md](docs/DECISIONS.md): design choices and why
 - [STYLE.md](docs/STYLE.md): visual style guide
 - [LOGO.md](docs/LOGO.md): the logo

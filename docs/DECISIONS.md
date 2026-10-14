@@ -459,7 +459,8 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   checks); the ISO is named `nullgrid-<VERSION>-x86_64.iso`. How to cut a release: RELEASING.md.
 - **Published as a GitHub release with the ISO attached** (+ `SHA256SUMS`), notes in
   `docs/releases/v1.0.0.md`.
-- **Updates of NULLGRID's own packages: deferred** (project owner's call, 2026-10-14). Installed
+- **Updates of NULLGRID's own packages: deferred at first** (project owner's call, 2026-10-14),
+  then built the same day for 1.1.0, as designed below (see "Update repository"). Installed
   systems get Arch updates through pacman, NULLGRID components only through a new ISO. The design
   for later: a signed `[nullgrid]` pacman repository hosted on a permanent `repo` GitHub release
   (`Server = https://github.com/bitmattz/nullgrid/releases/download/repo`), a dedicated signing key
@@ -491,6 +492,33 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   ISO. Bluetooth can't be emulated there (no `btvirt` in Arch's BlueZ): the shell test drives the
   Bluetooth picker with fake devices (`NULLGRID_SHELL_DEMO=1`, `PickerDemo.qml`); the boot test
   checks the no-adapter path. Real pairing is untested until real hardware.
+
+## Update repository (1.1.0)
+
+- **A signed pacman repository on a GitHub release** (`repo`, a pre-release so v1.x stays
+  "Latest"): free, no server, pacman follows GitHub's download redirects. Each publish replaces
+  the whole repository (old package versions are deleted). `SigLevel = Required
+  DatabaseRequired`: packages and the package list must carry NULLGRID's signature (tested:
+  a changed byte in either makes pacman refuse).
+- **One ed25519 key, no passphrase, no expiry** (owner's choice): stored only on the publishing
+  machine; an expiring key would silently stop updates everywhere, so revocation is the plan B.
+- **`nullgrid-keyring`** (date-versioned like archlinux-keyring) ships the public key in pacman's
+  keyring layout and its install script adds the `[nullgrid]` section to `/etc/pacman.conf`
+  (only once; left in place on removal). It's on the ISO, so new installs have updates set up;
+  the live ISO's `pacman-init` and the installer (`--populate archlinux nullgrid`) trust the key.
+- **Only released versions go into the repository** (owner's rule): pacman needs a higher version
+  to update, and versions stay equal to tags and the changelog. 1.1.0 went out through the
+  repository before any 1.1.0 ISO.
+- **Configs after an update:** a pacman hook (`nullgrid-refresh.hook`, in nullgrid-core) stamps
+  `/var/lib/nullgrid/updated`; zsh runs `nullgrid init` at a user's next login when that stamp is
+  newer than theirs (the same call as the first login: copies new default files, regenerates,
+  never overwrites hand edits). `nullgrid update` does pacman + refresh + shell restart at once.
+- **Things a package can't do on its own get done once on upgrade:** `nullgrid-desktop` enables
+  `bluetooth.service` when it upgrades from < 1.1.0 (`vercmp` in its install script), so 1.0.0
+  systems get working Bluetooth; a later `disable` sticks.
+- **Tested end to end** before upload: `make test-upgrade` installs the published 1.0.0 ISO,
+  follows docs/UPDATING.md against `out/publish` served from the test container, and checks the
+  result (versions, pickers, Bluetooth, refresh at the next login).
 
 ## Light hardware strategy (from the target-hardware answer)
 

@@ -67,6 +67,10 @@ INSTALLED_CHECKS = [
     ("sudo -n pacman-key --list-keys 2>/dev/null | grep -c '^uid'", r"[1-9]\d+"),
     ("cat /etc/nullgrid/installed | grep -o '^firmware=.*'", r"firmware=uefi"),
     ("nullgrid --version", r"nullgrid \d+\.\d+\.\d+"),
+    # updates are set up: the [nullgrid] repository, its key trusted, and it syncs from GitHub
+    ("grep -c '^\\[nullgrid\\]' /etc/pacman.conf", r"1"),
+    ("sudo -n pacman-key --list-keys 2>/dev/null | grep -c 'NULLGRID packages'", r"1"),
+    ("sudo -n pacman -Sy >/dev/null 2>&1; pacman -Sl nullgrid 2>/dev/null | grep -c ' nullgrid-desktop '", r"1"),
     ("nullgrid doctor >/dev/null && echo DOCTOR_OK", r"DOCTOR_OK"),
     ("nullgrid-welcome --status", r"pending"),
     ("cat ~/.config/nullgrid/generated/theme.json | grep -o '\"name\": \"crimson-hud\"'", r'"name": "crimson-hud"'),

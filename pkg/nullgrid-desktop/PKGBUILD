@@ -2,7 +2,7 @@
 # defaults, the session launcher, and the wallpaper tooling. The look and the keybinds are
 # generated per user by nullgrid-core from nullgrid.toml.
 pkgname=nullgrid-desktop
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="NULLGRID desktop session: Hyprland with a Sway fallback, HUD wallpaper"
 arch=('any')
@@ -24,7 +24,9 @@ depends=(
   'qt6ct'                              # Qt apps follow the theme (QT_QPA_PLATFORMTHEME=qt6ct)
   'dconf' 'gsettings-desktop-schemas'  # GTK reads its theme, icons, cursor and fonts from here
 )
-optdepends=('firefox: web browser (SUPER+W)' 'thunar: GUI file manager' 'ristretto: image viewer'
+install=nullgrid-desktop.install
+optdepends=('dnsmasq: Wi-Fi hotspots and connection sharing (NetworkManager)'
+            'firefox: web browser (SUPER+W)' 'thunar: GUI file manager' 'ristretto: image viewer'
             'zathura-pdf-mupdf: PDF viewer')
 source=('nullgrid-src.tar')
 sha256sums=('SKIP')

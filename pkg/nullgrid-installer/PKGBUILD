@@ -1,7 +1,7 @@
 # NULLGRID installer (nullgrid-install: live ISO -> disk) and first-run wizard (nullgrid-welcome).
 # Python/Textual, like the dashboard. The install copies the live image, so it needs no network.
 pkgname=nullgrid-installer
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="NULLGRID installer and first-run wizard"
 arch=('any')

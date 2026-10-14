@@ -3,8 +3,16 @@
 All notable changes to NULLGRID OS. Versions follow [semantic versioning](https://semver.org/);
 the version lives in `VERSION` and every NULLGRID package carries it.
 
-## Unreleased
+## 1.1.0 (2026-10-14)
 
+Delivered through the new update repository (no new ISO yet). Systems installed from 1.0.0:
+see [docs/UPDATING.md](docs/UPDATING.md) for the one-time setup.
+
+- **Updates through pacman.** A signed `[nullgrid]` repository (hosted as the `repo` GitHub
+  release); the `nullgrid-keyring` package trusts its key and adds it to `/etc/pacman.conf`.
+  `sudo pacman -Syu` now updates NULLGRID too. **`nullgrid update`** does that and refreshes
+  your configs right away (restarts the shell if needed, says when to log out or reboot).
+  Otherwise every user's configs refresh at their next login (a pacman hook marks updates).
 - **Wi-Fi and Bluetooth pickers in the bar.** Click the Wi-Fi icon: networks in range with
   signal bars and security, connect with a click, type a password inline, disconnect/forget;
   a wrong password shows and asks again. Click the Bluetooth icon: paired devices (connect,

@@ -4,8 +4,10 @@
 
 : ${XDG_CONFIG_HOME:=$HOME/.config} ${XDG_STATE_HOME:=$HOME/.local/state} ${XDG_CACHE_HOME:=$HOME/.cache}
 
-# --- first run: default dotfiles + generated theme files --------------------
-if [[ ! -e $XDG_STATE_HOME/nullgrid/initialized ]] && (( $+commands[nullgrid] )); then
+# --- first run, and after NULLGRID updates: default dotfiles + generated theme files ----
+# (the pacman hook stamps /var/lib/nullgrid/updated when NULLGRID packages change)
+if [[ ! -e $XDG_STATE_HOME/nullgrid/initialized || /var/lib/nullgrid/updated -nt $XDG_STATE_HOME/nullgrid/initialized ]] \
+    && (( $+commands[nullgrid] )); then
   nullgrid init --quiet
 fi
 [[ -r $XDG_CONFIG_HOME/nullgrid/generated/shell-env.sh ]] && source $XDG_CONFIG_HOME/nullgrid/generated/shell-env.sh

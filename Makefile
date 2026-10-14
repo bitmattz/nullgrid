@@ -7,16 +7,21 @@
 #   make splash     preview the Plymouth boot splash (X11 renderer, Docker) -> out/screens/splash-*.png
 #   make test-boot  headless boot + checks over serial (runs in Docker; no host QEMU needed)
 #   make perf       boot the ISO in a 4 GB VM, measure the idle desktop (RAM, CPU, boot) -> out/perf/report.md
+#   make sign-key   create the package signing key (once) and export its public half to pkg/nullgrid-keyring
+#   make publish-repo  build, sign and upload the packages to the [nullgrid] update repository
+#   make test-upgrade  install the 1.0.0 ISO, set up updates, pacman -Syu from out/publish, check
 #   make test-install  install the ISO to a virtual disk, boot it (UEFI + BIOS), check it (ENCRYPT=1: LUKS)
 
 BUILDER  ?= nullgrid-builder
+# the package signing key (private: never in the repo); see docs/RELEASING.md
+SIGNING  ?= $(HOME)/.local/share/nullgrid-signing
 WORKVOL  ?= nullgrid-work
 KVM      := $(if $(wildcard /dev/kvm),--device /dev/kvm,)
 DOCKER    = docker run --rm $(DOCKER_TTY) -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
             -v $(CURDIR):/src -v $(WORKVOL):/work $(BUILDER)
 DOCKER_TTY = $(if $(shell [ -t 0 ] && echo y),-it,)
 
-.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell splash test-boot test-boot-bios test-install perf shell check-host clean distclean
+.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell splash test-boot test-boot-bios test-install test-upgrade perf sign-key publish-repo shell check-host clean distclean
 
 help:
 	@sed -n 's/^#   //p' Makefile
@@ -71,6 +76,24 @@ test-boot-bios:
 test-install:
 	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e INSTALL_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
 		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/install_smoke.py $(if $(ENCRYPT),--encrypt,)
+
+sign-key: builder
+	mkdir -p -m 700 $(SIGNING)
+	docker run --rm --user $(shell id -u):$(shell id -g) -v $(CURDIR):/src -v $(SIGNING):/signing $(BUILDER) \
+		/src/build/signing-key.sh
+
+# the packages from `make repo` (the same ones the ISO gets), signed, to the GitHub release "repo"
+publish-repo: repo
+	@[ -f $(SIGNING)/fingerprint ] || { echo "no signing key: run make sign-key"; exit 1; }
+	docker run --rm --user $(shell id -u):$(shell id -g) -v $(CURDIR):/src -v $(SIGNING):/signing $(BUILDER) \
+		/src/build/sign-repo.sh
+	build/publish-repo.sh
+
+# FROM: the old ISO (default: the published 1.0.0, `gh release download v1.0.0 -D out/v1.0.0`)
+test-upgrade:
+	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e INSTALL_TIMEOUT -e UPGRADE_TIMEOUT \
+		-e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
+		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/upgrade_smoke.py $(FROM)
 
 perf:
 	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
