@@ -31,8 +31,10 @@ Taken by `make test-boot` on the live ISO in QEMU (1600x900, no 3D: software ren
 | **GUI apps**: Firefox and Thunar in the NULLGRID GTK theme and icons | **The same apps** after `nullgrid theme set toxic-grid`, restyled while running |
 | ![Boot splash](docs/screenshots/boot-splash.png) | ![Greeter](docs/screenshots/greeter.png) |
 | **Boot splash** (Plymouth): the dead pixel wanders the lattice, a fake boot log scrolls | **Greeter** (installed systems): tuigreet over matrix rain; F3 picks desktop or terminal mode |
-| ![First-run wizard](docs/screenshots/first-boot-welcome.png) | |
-| **First boot** of an installed system (`make test-install`): theme, sound pack, mode | |
+| ![First-run wizard](docs/screenshots/first-boot-welcome.png) | ![Wi-Fi picker](docs/screenshots/wifi-picker.png) |
+| **First boot** of an installed system (`make test-install`): theme, sound pack, mode | **Wi-Fi picker** (click the bar's Wi-Fi icon), joined to a test hotspot (toxic-grid) |
+| ![Bluetooth picker](docs/screenshots/bluetooth-picker.png) | |
+| **Bluetooth picker** (click the Bluetooth icon; demo devices from the shell test) | |
 
 ## Download
 

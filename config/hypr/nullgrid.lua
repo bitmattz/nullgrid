@@ -67,7 +67,7 @@ hl.window_rule({
 -- Blur behind the launcher and the shell's bar, dock, menu and notifications.
 hl.layer_rule({
     name = "nullgrid-blur",
-    match = { namespace = "^(launcher|nullgrid-(bar|dock|menu|notifications))$" },
+    match = { namespace = "^(launcher|nullgrid-(bar|dock|menu|notifications|picker))$" },
     blur = true,
     ignore_alpha = 0.2,
 })

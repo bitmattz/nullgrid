@@ -57,7 +57,8 @@ played() { grep -qx "$1" $HOME/played.log 2>/dev/null; }
 for i in $(seq 50); do nullgrid-sfx status >/dev/null 2>&1 && break; sleep 0.1; done
 sfx=$(nullgrid-sfx status 2>&1)
 [[ $sfx == *'"pack": "neural-link"'*'"sway"'* ]] && ok "sound daemon: $sfx" || bad "sound daemon: $sfx"
-quickshell -c nullgrid >$HOME/qs.log 2>&1 &
+# demo mode: the bar's Wi-Fi/Bluetooth pickers get fake networks and devices (no radios here)
+NULLGRID_SHELL_DEMO=1 quickshell -c nullgrid >$HOME/qs.log 2>&1 &
 for i in $(seq 100); do grep -q "Configuration Loaded" $HOME/qs.log && break; sleep 0.1; done
 grep -q "Configuration Loaded" $HOME/qs.log && ok "shell loaded" || bad "shell did not load"
 sleep 4
@@ -84,6 +85,32 @@ grim $out/shell-menu.png
 quickshell -c nullgrid ipc call shell closeMenu
 sleep 0.5
 played launcher_open && played launcher_close && ok "menu sounds" || bad "no menu sounds: $(tr '\n' ' ' < $HOME/played.log)"
+
+# The bar's pickers (demo data). The IPC calls are the ones the clicks make.
+ipc() { quickshell -c nullgrid ipc call shell "$@"; }
+wifi=$(ipc wifi)
+[[ $wifi == *'"name":"NULLGRID-NODE","bars":4,"secured":true,"known":true,"connected":true'* &&
+   $wifi == *'"name":"OPEN-RELAY","bars":2,"secured":false'* ]] && ok "wifi picker: networks, signal, security" || bad "wifi picker: $wifi"
+ipc openPicker wifi; sleep 1.5
+[[ $(ipc status) == *picker=wifi* ]] && ok "wifi picker opens" || bad "wifi picker did not open: $(ipc status)"
+grim $out/shell-wifi.png
+ipc wifiConnect night_market_5G nullgrid8 >/dev/null; ipc wifiConnect OPEN-RELAY "" >/dev/null; sleep 0.5
+log=$(ipc demoLog)
+[[ $log == *'connect night_market_5G psk=nullgrid8'*'connect OPEN-RELAY"'* ]] && ok "wifi: connect with a password, and an open network" || bad "wifi actions: $log"
+[[ $(ipc wifi) == *'"name":"night_market_5G","bars":3,"secured":true,"known":true,"connected":true'* ]] \
+    && ok "wifi: the joined network shows as linked" || bad "wifi after connect: $(ipc wifi)"
+ipc openPicker bluetooth; sleep 1.5
+[[ $(ipc status) == *picker=bluetooth* ]] && ok "bluetooth picker opens (and closes the wifi one)" || bad "bluetooth picker: $(ipc status)"
+grim $out/shell-bluetooth.png
+bt=$(ipc bluetooth)
+[[ $bt == *'"paired":[{"name":"NG-PODS","kind":"HEADSET","connected":true,"paired":true,"battery":80'* &&
+   $bt == *'"available":[{"name":"Speaker X"'* ]] && ok "bluetooth picker: paired + available, battery" || bad "bluetooth picker: $bt"
+ipc btActivate 0A:00:00:00:00:03 >/dev/null; sleep 0.5      # pair a new device -> it gets connected
+ipc btActivate 0A:00:00:00:00:02 >/dev/null; sleep 0.5      # connect a paired one
+log=$(ipc demoLog)
+[[ $log == *'bt pair Speaker X","bt connect Speaker X","bt connect deck mouse'* ]] && ok "bluetooth: pair+connect, connect" || bad "bluetooth actions: $log"
+ipc closePicker; sleep 0.3
+[[ $(ipc status) == *picker=none* ]] && ok "picker closes" || bad "picker still open"
 swaymsg -q workspace 2; sleep 0.5; swaymsg -q workspace 1; sleep 0.5
 played workspace_switch && ok "workspace sound (sway events)" || bad "no workspace sound"
 nullgrid sound mute on >/dev/null; sleep 0.5

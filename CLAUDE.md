@@ -505,5 +505,19 @@ test, test-shell, test-boot, test-install, perf (Hyprland 718 MiB, lite 602 MiB)
 Deferred by the owner: a signed `[nullgrid]` pacman repo for updates (design in DECISIONS.md).
 Package check() tarballs need `VERSION` and `pkg/` (build-packages.sh).
 
+**After 1.0.0 (unreleased): Wi-Fi + Bluetooth pickers in the bar.** `shell/Net.qml`, `Bt.qml`
+(singletons: state/actions), `NetPicker.qml`, `BtPicker.qml`, `Popout.qml`, `PickerButton.qml`,
+`PickerDemo.qml` (fakes when `NULLGRID_SHELL_DEMO=1`). Bar icon: left click = picker, right click
+= radio. IPC: `openPicker/togglePicker/closePicker`, `wifi`, `bluetooth` (JSON), `wifiConnect NAME
+PSK`, `btActivate ADDR`, `demoLog`; `nullgrid-shell wifi|bluetooth`. ISO: `bluez bluez-utils`
+(bluetooth.service via bluetooth.target.wants + dbus-org.bluez alias, in install.KEEP), `dnsmasq`.
+Boot test `wifi_tour`: mac80211_hwsim + `nmcli device wifi hotspot` on wlan1, the picker joins
+from wlan0 (wrong password first). Gotchas: polkit only authorizes NetworkManager for processes
+in the active desktop session (a shell restarted from serial gets "Not authorized"); Hyprland
+Lua `hyprctl dispatch` takes Lua (`'hl.dsp...'`), not `exec cmd`; `connectWithPsk` on a saved
+network updates its password (don't `forget()` first: it races); hwsim radios are "unavailable"
+for ~1 s; NM hotspots need dnsmasq. Version still 1.0.0 until the next release (CHANGELOG
+"Unreleased").
+
 **Next (after phase 9):** the Raspberry Pi SD-image builder (`docs/DECISIONS.md`, light hardware
 strategy). Ideas not done: measure on a real GPU / with virgl; Xwayland on demand.

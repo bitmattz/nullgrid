@@ -3,6 +3,20 @@
 All notable changes to NULLGRID OS. Versions follow [semantic versioning](https://semver.org/);
 the version lives in `VERSION` and every NULLGRID package carries it.
 
+## Unreleased
+
+- **Wi-Fi and Bluetooth pickers in the bar.** Click the Wi-Fi icon: networks in range with
+  signal bars and security, connect with a click, type a password inline, disconnect/forget;
+  a wrong password shows and asks again. Click the Bluetooth icon: paired devices (connect,
+  disconnect, battery, forget) and devices in range (pair + trust + connect). Right click still
+  turns the radio on/off. `nullgrid-shell wifi|bluetooth` opens them.
+- **Bluetooth works at all now:** `bluez` and `bluez-utils` are installed and the service is
+  enabled (it starts when an adapter appears). In 1.0.0 the Bluetooth toggle never showed.
+- **`dnsmasq`** on the ISO: NetworkManager hotspots and connection sharing (`nmtui` "Hotspot").
+- Tests: the boot test joins a real NetworkManager hotspot through the picker (two virtual
+  radios, `mac80211_hwsim`), wrong password first; the shell test drives both pickers with fake
+  networks and devices (`NULLGRID_SHELL_DEMO=1`).
+
 ## 1.0.0 (2026-10-14)
 
 The first release: all nine build phases of the project brief. Release notes:

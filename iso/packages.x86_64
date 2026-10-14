@@ -162,6 +162,16 @@ plymouth
 greetd
 greetd-tuigreet
 
+## Networking extras
+# DHCP for NetworkManager hotspots and connection sharing (nmtui "Hotspot", nmcli device wifi hotspot)
+dnsmasq
+
+## Bluetooth (the bar's Bluetooth picker; bluetoothd only starts when an adapter is present)
+# the Bluetooth daemon (D-Bus API the shell uses)
+bluez
+# bluetoothctl: pairing devices that ask for a PIN, and anything the picker doesn't do
+bluez-utils
+
 ## Installer (nullgrid-install copies this live system to a disk; pulled in by nullgrid-installer)
 # arch-chroot: runs locale-gen, useradd, mkinitcpio, bootctl inside the new system
 arch-install-scripts

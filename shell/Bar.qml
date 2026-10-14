@@ -147,17 +147,22 @@ PanelWindow {
 
         Row {  // quick toggles
             spacing: 10
+            // click: the picker (networks / devices); right click: radio on/off
             Toggle {
                 icon: "wifi"
-                visible: Networking.wifiHardwareEnabled
-                on: Networking.wifiEnabled
-                onClicked: { Sfx.play("button_click"); Networking.wifiEnabled = !Networking.wifiEnabled }
+                visible: Net.hasWifi
+                on: Net.wifiOn && Net.connected !== null
+                dim: !Net.wifiOn
+                onClicked: { Sfx.play("button_click"); Ui.togglePicker("wifi") }
+                onSecondaryClicked: { Sfx.play("button_click"); Net.setWifi(!Net.wifiOn) }
             }
             Toggle {
                 icon: "bluetooth"
-                visible: Bluetooth.defaultAdapter !== null
-                on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false
-                onClicked: { Sfx.play("button_click"); Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled }
+                visible: Bt.present
+                on: Bt.on && Bt.paired.some(d => d.connected)
+                dim: !Bt.on
+                onClicked: { Sfx.play("button_click"); Ui.togglePicker("bluetooth") }
+                onSecondaryClicked: { Sfx.play("button_click"); Bt.setOn(!Bt.on) }
             }
             Toggle {
                 icon: "brightness"
@@ -237,7 +242,9 @@ PanelWindow {
         property string icon
         property bool on: false
         property real value: NaN
+        property bool dim: false          // switched off (vs. on but idle)
         signal clicked()
+        signal secondaryClicked()
         signal scrolled(bool up)
         implicitWidth: row.implicitWidth
         implicitHeight: 20
@@ -245,7 +252,7 @@ PanelWindow {
             id: row
             spacing: 3
             anchors.verticalCenter: parent.verticalCenter
-            NgIcon { name: toggle.icon; size: 16; color: toggle.on ? Theme.primary : Theme.dim }
+            NgIcon { name: toggle.icon; size: 16; color: toggle.on ? Theme.primary : toggle.dim ? Theme.alpha(Theme.dim, 0.45) : Theme.dim }
             NgText {
                 visible: !isNaN(toggle.value)
                 text: Math.round(toggle.value)
@@ -257,7 +264,8 @@ PanelWindow {
         }
         MouseArea {
             anchors.fill: parent
-            onClicked: toggle.clicked()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: mouse => mouse.button === Qt.RightButton ? toggle.secondaryClicked() : toggle.clicked()
             onWheel: wheel => toggle.scrolled(wheel.angleDelta.y > 0)
         }
     }

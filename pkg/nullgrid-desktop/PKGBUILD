@@ -15,6 +15,8 @@ depends=(
   'quickshell'                         # the shell: bar, dock, HUD widgets, start menu, notifications
   'fuzzel' 'hyprlock'                  # keyboard launcher, lock screen (themed by nullgrid-core)
   'brightnessctl'                      # brightness keys and the bar's brightness control
+  'networkmanager'                     # the bar's Wi-Fi picker (through Quickshell)
+  'bluez' 'bluez-utils'                # the bar's Bluetooth picker; bluetoothctl for PIN pairing
   'wireplumber'                        # wpctl: the volume keys (nullgrid-media)
   'grim' 'slurp' 'wl-clipboard' 'libnotify'   # nullgrid-screenshot
   'adw-gtk-theme'                      # base of the generated NULLGRID GTK theme

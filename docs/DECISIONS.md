@@ -469,6 +469,29 @@ Small choices are recorded here as they're made. Big ones were agreed up front (
   against current Arch. Systems installed from 1.0.0 will need a one-time step to add the repo
   and key.
 
+## After 1.0.0: Wi-Fi and Bluetooth pickers
+
+- **Built on Quickshell's own Networking and Bluetooth modules** (NetworkManager and BlueZ over
+  D-Bus), not on nmcli/bluetoothctl output. `Net.qml`/`Bt.qml` hold state and actions,
+  `NetPicker.qml`/`BtPicker.qml`/`Popout.qml` the HUD popups. Left click on the bar icon opens
+  the picker, right click keeps the old quick on/off.
+- **No polkit or pairing agent needed for the common cases:** NetworkManager's own polkit rule
+  lets local `wheel` users save connections without a password (the desktop session counts as
+  local and active; a shell started from a serial login doesn't, which only matters in tests).
+  BlueZ pairs "just works" devices (headphones, mice, speakers) without an agent; devices that
+  want a PIN or passkey are pointed to `bluetoothctl`. A real agent would be a later addition.
+- **A wrong password** is reported by NetworkManager as "no secrets" (no secret agent): the
+  picker shows it and asks again. Retrying calls `connectWithPsk` on the saved network, which
+  updates that profile's password. Forgetting it first raced with the update (tested).
+- **Hotspot radios are skipped:** the picker uses the first Wi-Fi device that isn't in access
+  point mode.
+- **Testing without radios:** `make test-boot` loads `mac80211_hwsim` (two virtual radios), runs
+  a NetworkManager hotspot on one and joins it through the picker from the other. That needs
+  DHCP for the hotspot, i.e. `dnsmasq`, which NetworkManager's hotspots need anyway: added to the
+  ISO. Bluetooth can't be emulated there (no `btvirt` in Arch's BlueZ): the shell test drives the
+  Bluetooth picker with fake devices (`NULLGRID_SHELL_DEMO=1`, `PickerDemo.qml`); the boot test
+  checks the no-adapter path. Real pairing is untested until real hardware.
+
 ## Light hardware strategy (from the target-hardware answer)
 
 - Every NULLGRID tool is Python/QML/shell (`arch=any`), so it is architecture-neutral by design.

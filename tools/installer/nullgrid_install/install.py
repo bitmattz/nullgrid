@@ -63,6 +63,8 @@ KEEP = [
     "etc/systemd/system/dbus-org.freedesktop.timesync1.service",
     "etc/systemd/system/multi-user.target.wants/NetworkManager.service",
     "etc/systemd/system/multi-user.target.wants/nullgrid-console-palette.service",
+    "etc/systemd/system/bluetooth.target.wants",                 # bluetoothd when an adapter shows up
+    "etc/systemd/system/dbus-org.bluez.service",
     "etc/systemd/system/network-online.target.wants",
     "etc/systemd/system/sysinit.target.wants",
     "etc/systemd/system/systemd-loop@.service",          # masked: as on the live system

@@ -6,7 +6,18 @@ import Quickshell
 Singleton {
     property bool menuOpen: false
     function toggleMenu() { menuOpen = !menuOpen }
-    onMenuOpenChanged: Sfx.play(menuOpen ? "launcher_open" : "launcher_close")
+    onMenuOpenChanged: {
+        Sfx.play(menuOpen ? "launcher_open" : "launcher_close")
+        if (menuOpen) picker = ""
+    }
+
+    // the open bar picker: "wifi", "bluetooth" or "" (NetPicker.qml, BtPicker.qml)
+    property string picker: ""
+    function togglePicker(name) { picker = picker === name ? "" : name }
+    onPickerChanged: if (picker) menuOpen = false
+
+    // demo mode for the shell test: the pickers show fake networks and devices (PickerDemo.qml)
+    readonly property bool demo: Quickshell.env("NULLGRID_SHELL_DEMO") === "1"
 
     // Apps pinned to the dock (and shown as favorites in the start menu). `app` is the window
     // class that marks the app as running/active.

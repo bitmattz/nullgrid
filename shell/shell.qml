@@ -26,6 +26,8 @@ ShellRoot {
     }
 
     StartMenu {}
+    NetPicker {}
+    BtPicker {}
     Notifications {}
 
     // `qs -c nullgrid ipc call shell <function>` (nullgrid-shell wraps it)
@@ -34,9 +36,19 @@ ShellRoot {
         function toggleMenu(): void { Ui.toggleMenu() }
         function openMenu(): void { Ui.menuOpen = true }
         function closeMenu(): void { Ui.menuOpen = false }
+        // the bar's pickers: openPicker wifi|bluetooth
+        function openPicker(name: string): void { Ui.picker = name }
+        function togglePicker(name: string): void { Ui.togglePicker(name) }
+        function closePicker(): void { Ui.picker = "" }
+        function wifi(): string { return JSON.stringify(Net.summary()) }
+        function bluetooth(): string { return JSON.stringify(Bt.summary()) }
+        // the same calls as clicking in the pickers (for tests and scripts)
+        function wifiConnect(name: string, password: string): string { return Net.connect(name, password) ? "ok" : "no such network" }
+        function btActivate(address: string): string { return Bt.activate(address) ? "ok" : "no such device" }
+        function demoLog(): string { return JSON.stringify(PickerDemo.log) }
         function status(): string {
             const audio = Pipewire.ready && Pipewire.defaultAudioSink !== null
-            return `theme=${Theme.name} wm=${Wm.name} menu=${Ui.menuOpen} cpu=${Math.round(Sys.cpu)} mem=${Math.round(Sys.memPct)} audio=${audio}`
+            return `theme=${Theme.name} wm=${Wm.name} menu=${Ui.menuOpen} picker=${Ui.picker || "none"} cpu=${Math.round(Sys.cpu)} mem=${Math.round(Sys.memPct)} audio=${audio}`
         }
     }
 }

@@ -75,6 +75,8 @@ HYPRLAND_CHECKS = [
     ("hyprctl monitors | grep -o '1600x900'", r"1600x900"),
     ("pgrep -x swaybg >/dev/null && ls ~/.cache/nullgrid/wallpaper/ | grep -c 1600x900", r"[1-9]"),
     ("hyprctl binds | grep -c 'dispatcher'", r"[1-9]\d+"),
+    # Bluetooth: the daemon and the CLI are there (the service starts when an adapter appears)
+    ("command -v bluetoothctl && systemctl is-enabled bluetooth", r"enabled"),
     # kitty shows a window instead of failing when its config has errors
     ("pgrep -f 'kitten __show_error__' >/dev/null && echo KITTY_CONFIG_ERRORS || echo KITTY_CONFIG_OK", r"KITTY_CONFIG_OK"),
     # no config watcher per kitty (auto_reload_config -1): only kitty's own exit helper
@@ -354,6 +356,43 @@ def sound_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
     c.wait("nullgrid-sfx status", r'.*"recent": \[[^]]*"volume_change".*', 10)
 
 
+def wifi_tour(c: Checker, mon: Monitor) -> None:
+    """The bar's Wi-Fi picker against the real NetworkManager. The VM has no Wi-Fi, so the kernel
+    makes two virtual radios (mac80211_hwsim); NetworkManager runs a hotspot on one, and the
+    picker joins it from the other: first with a wrong password, then with the right one. The
+    IPC calls are the ones the picker's clicks make."""
+    ipc = "quickshell -c nullgrid ipc call shell"
+    c.con.run("sudo modprobe mac80211_hwsim radios=2", 30)
+    # NetworkManager first has the new radios as "unavailable", for about a second
+    if not c.wait("nmcli -t -f DEVICE,STATE device | grep -cE '^wlan[01]:disconnected$'", "2", 30):
+        c.info("nmcli device; ip link")
+        return
+    # (the hotspot hands out addresses with dnsmasq, like any NetworkManager hotspot)
+    c.check("sudo nmcli device wifi hotspot ifname wlan1 con-name ng-hotspot ssid NG-TEST password nullgrid8"
+            " >/dev/null && echo HOTSPOT", r"HOTSPOT", 60)
+    c.con.run(f"{ipc} openPicker wifi", 30)
+    if not c.wait(f"{ipc} wifi | grep -o '\"name\":\"NG-TEST\"'", '"name":"NG-TEST"', 90):
+        c.info(f"{ipc} wifi; nmcli -f DEVICE,MODE,STATE device; nmcli device wifi list ifname wlan0")
+        c.con.run(f"{ipc} closePicker", 30)
+        return
+    time.sleep(2)
+    mon.screenshot("desktop-wifi-picker")
+    c.con.run(f"{ipc} wifiConnect NG-TEST wrongpass9", 30)
+    c.wait(f"{ipc} wifi | grep -o 'wrong password?\\|could not connect' | head -1",
+           r"(wrong password\?|could not connect)", 120)
+    time.sleep(2)
+    mon.screenshot("desktop-wifi-picker-error")
+    c.con.run(f"{ipc} wifiConnect NG-TEST nullgrid8", 30)
+    c.wait("nmcli -g GENERAL.CONNECTION device show wlan0", "NG-TEST", 90)
+    c.check("nmcli -t -f NAME connection | grep -c '^NG-TEST$'", r"1")   # the bad password was replaced, not duplicated
+    c.wait("nmcli -g IP4.ADDRESS device show wlan0", r"10\.42\.0\.[0-9]+/24", 60)   # DHCP from the hotspot
+    c.wait(f"{ipc} wifi | grep -o '\"name\":\"NG-TEST\",[^}}]*\"connected\":true' | wc -l", "1", 30)
+    time.sleep(2)
+    mon.screenshot("desktop-wifi-picker-linked")
+    c.con.run(f"{ipc} closePicker; sudo nmcli connection delete NG-TEST ng-hotspot >/dev/null 2>&1;"
+              " sudo modprobe -r mac80211_hwsim", 60)
+
+
 def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
     # -- Hyprland (desktop mode is the default) --
     if not c.wait("pgrep -x Hyprland >/dev/null && echo UP", "UP", 120):
@@ -403,6 +442,9 @@ def desktop_tour(c: Checker, mon: Monitor, rec: Recording) -> None:
         mon.screenshot("desktop-hyprland-menu")
     mon.keys("esc")
     c.wait("nullgrid-shell status", r".* menu=false .*", 20)
+    wifi_tour(c, mon)
+    # no adapter in the VM: the Bluetooth picker says so (bluetoothd isn't even started)
+    c.check("quickshell -c nullgrid ipc call shell bluetooth", r'\{"adapter":false,"on":false,"paired":\[\],"available":\[\]\}')
     mon.keys("meta_l-slash")       # keybind help popup
     time.sleep(4)
     mon.screenshot("desktop-hyprland-keys")

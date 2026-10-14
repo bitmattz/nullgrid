@@ -78,9 +78,22 @@ The shell is a [Quickshell](https://quickshell.org) config (QML) in
 `~/.config/nullgrid/generated/theme.json` and restyles as soon as `nullgrid theme ...` changes it.
 
 - **Status bar** (bottom): mode and profile, workspaces, window title, now playing (MPRIS), tray,
-  quick toggles (Wi-Fi, Bluetooth, brightness, volume: click toggles, scroll adjusts), CPU, RAM,
+  quick toggles (Wi-Fi and Bluetooth: click opens their picker, right click turns the radio on or
+  off; brightness and volume: click toggles, scroll adjusts), CPU, RAM,
   GPU, network down/up, CPU/GPU temperature, battery and power draw, date and time. Readings that
   the hardware doesn't have are left out.
+- **Wi-Fi picker** (click the bar's Wi-Fi icon, or `nullgrid-shell wifi`): the wired link, then
+  the Wi-Fi networks in range (it scans while open), the linked one first, then saved ones, then
+  by signal, with four-segment signal bars and a lock on secured ones. Click a network to
+  connect; a secured one you haven't used asks for its password right in the list (Enter to
+  connect). A saved or linked network offers CONNECT / DISCONNECT / FORGET. A wrong password
+  shows under the network and asks again. The ON/OFF switch is the Wi-Fi radio. Hidden
+  networks, VPNs, enterprise (802.1X) Wi-Fi and static IPs: **MORE: NMTUI**.
+- **Bluetooth picker** (click the Bluetooth icon, or `nullgrid-shell bluetooth`): paired devices
+  (click connects or disconnects; battery level when the device reports it; × forgets it), then
+  devices in range (it scans while open; click pairs, trusts and connects). Devices that want a
+  PIN or passkey need `bluetoothctl` (**MORE: BLUETOOTHCTL**): the shell has no pairing agent.
+  The Bluetooth icon only shows when the machine has an adapter.
 - **Dock** (left): the start button, then pinned apps (terminal, files, editor, monitor,
   dashboard, settings) as circular buttons. The focused app's button is hatched, and a dot
   marks running ones. Below: a dot per workspace and the current workspace's number.
@@ -103,6 +116,7 @@ eight positions. Widgets at the same position stack together.
 
 ```sh
 nullgrid-shell menu      # open/close the start menu
+nullgrid-shell wifi      # open/close the Wi-Fi picker (bluetooth: the Bluetooth one)
 nullgrid-shell status    # what the running shell sees
 nullgrid-shell restart   # e.g. after changing the QML
 nullgrid-shell log       # its log

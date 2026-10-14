@@ -1,5 +1,5 @@
 #!/bin/sh
-# nullgrid-shell [menu|status|restart|log]
+# nullgrid-shell [menu|wifi|bluetooth|status|restart|log]
 # Start the NULLGRID desktop shell (Quickshell: bar, dock, HUD widgets, start menu,
 # notifications), or talk to the running one. The shell lives in /etc/xdg/quickshell/nullgrid/;
 # a copy in ~/.config/quickshell/nullgrid/ takes precedence (and reloads as you edit it).
@@ -11,6 +11,7 @@ qs() { quickshell -c nullgrid "$@"; }
 case ${1:-} in
     "") exec quickshell -c nullgrid --no-duplicate --daemonize ;;
     menu) exec quickshell -c nullgrid ipc call shell toggleMenu ;;
+    wifi|bluetooth) exec quickshell -c nullgrid ipc call shell togglePicker "$1" ;;
     status) exec quickshell -c nullgrid ipc call shell status ;;
     restart)
         # the running shell may come from the system config or a user copy made since
@@ -18,5 +19,5 @@ case ${1:-} in
         quickshell -p /etc/xdg/quickshell/nullgrid kill >/dev/null 2>&1 || true
         exec quickshell -c nullgrid --no-duplicate --daemonize ;;
     log) exec quickshell -c nullgrid log ;;
-    *) echo "usage: nullgrid-shell [menu|status|restart|log]" >&2; exit 2 ;;
+    *) echo "usage: nullgrid-shell [menu|wifi|bluetooth|status|restart|log]" >&2; exit 2 ;;
 esac
