@@ -1,16 +1,17 @@
-# NULLGRID branding and release info. Installed on the live ISO and on installed systems.
+# NULLGRID branding and release info, and system-wide memory settings. Installed on the live ISO and on installed systems.
 pkgname=nullgrid-base
-pkgver=0.1.0
+pkgver=0.9.0
 pkgrel=1
-pkgdesc="NULLGRID OS base branding (os-release)"
+pkgdesc="NULLGRID OS base: branding (os-release), memory settings"
 arch=('any')
 url="https://github.com/bitmattz/nullgrid"
 license=('MIT')
 depends=('filesystem')
-source=('os-release')
-sha256sums=('SKIP')
+source=('os-release' 'nullgrid-memory.conf')
+sha256sums=('SKIP' 'SKIP')
 
 package() {
   # /etc/os-release takes precedence over /usr/lib/os-release (owned by filesystem).
   install -Dm644 os-release "$pkgdir/etc/os-release"
+  install -Dm644 nullgrid-memory.conf "$pkgdir/usr/lib/tmpfiles.d/nullgrid-memory.conf"
 }

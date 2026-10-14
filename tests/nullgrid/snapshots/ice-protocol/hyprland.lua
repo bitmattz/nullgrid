@@ -55,6 +55,12 @@ hl.animation({ leaf = "fade", enabled = true, speed = 1.5, bezier = "ng_mech" })
 hl.animation({ leaf = "layers", enabled = true, speed = 1.5, bezier = "ng_mech", style = "fade" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 2.0, bezier = "ng_mech", style = "slide" })
 
+-- Without a 3D GPU (nullgrid-session sets NULLGRID_SOFTWARE_RENDER) blur is drawn in software:
+-- `make perf` measured 24 MB more and ~1.5x the idle CPU with it. The neon glow stays.
+if os.getenv("NULLGRID_SOFTWARE_RENDER") == "1" then
+    hl.config({ decoration = { blur = { enabled = false } } })
+end
+
 return {
     bg = "rgba(070a0fff)",
     bg_alt = "rgba(0d1420ff)",

@@ -12,7 +12,11 @@ case ${1:-} in
     "") exec quickshell -c nullgrid --no-duplicate --daemonize ;;
     menu) exec quickshell -c nullgrid ipc call shell toggleMenu ;;
     status) exec quickshell -c nullgrid ipc call shell status ;;
-    restart) qs kill >/dev/null 2>&1 || true; exec quickshell -c nullgrid --no-duplicate --daemonize ;;
+    restart)
+        # the running shell may come from the system config or a user copy made since
+        qs kill >/dev/null 2>&1 || true
+        quickshell -p /etc/xdg/quickshell/nullgrid kill >/dev/null 2>&1 || true
+        exec quickshell -c nullgrid --no-duplicate --daemonize ;;
     log) exec quickshell -c nullgrid log ;;
     *) echo "usage: nullgrid-shell [menu|status|restart|log]" >&2; exit 2 ;;
 esac

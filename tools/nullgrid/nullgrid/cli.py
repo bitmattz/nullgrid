@@ -14,6 +14,7 @@ from . import __version__, doctor, dotfiles
 from . import config as cfgmod
 from . import keybinds as kbmod
 from . import paths as pathmod
+from . import perf
 from . import render
 from . import sound
 from . import toolkit
@@ -516,10 +517,50 @@ def build_parser() -> argparse.ArgumentParser:
     i.add_argument("-q", "--quiet", action="store_true")
     i.set_defaults(func=cmd_init)
 
+    pf = sub.add_parser("perf", help="memory and CPU per NULLGRID component (run as root for exact memory)")
+    pf.add_argument("--seconds", type=float, default=10.0, help="how long to measure CPU (default 10)")
+    pf.add_argument("--top", type=int, default=10, help="also list the N biggest processes (default 10, 0: none)")
+    pf.add_argument("--json", action="store_true", help="machine-readable output")
+    pf.set_defaults(func=cmd_perf)
+
     d = sub.add_parser("doctor", help="check the system and config for problems")
     d.add_argument("-v", "--verbose", action="store_true", help="also show informational notes")
     d.set_defaults(func=cmd_doctor)
     return p
+
+
+# --------------------------------------------------------------------------- perf
+def _mib(n: int) -> str:
+    return f"{n / 1024**2:.0f} MiB"
+
+
+def cmd_perf(args, paths) -> None:
+    if args.seconds <= 0:
+        raise Fail("--seconds must be more than 0")
+    if not args.json:
+        print(paint(f"measuring for {args.seconds:g} s...", "dim"), file=sys.stderr)
+    r = perf.measure(args.seconds, args.top)
+    if args.json:
+        import json
+        print(json.dumps(r.as_dict(), indent=2))
+        return
+    print(paint("NULLGRID IDLE COST", "head"),
+          f"  memory used {_mib(r.mem_used)} of {_mib(r.mem_total)}   CPU {r.cpu_total:.1f}% ({r.cpus} cores)")
+    print(paint(f"{'COMPONENT':<18}{'MEMORY':>9}{'CPU':>8}{'PROCS':>7}{'UP AT':>9}", "dim"))
+    order = sorted(r.components.items(), key=lambda kv: -kv[1].mem)
+    for name, u in order:
+        style = "ok" if name in perf.NULLGRID else "info"
+        up = f"{u.started:.1f}s" if u.started is not None else "-"
+        print(paint(f"{name:<18}", style) + f"{_mib(u.mem):>9}{u.cpu:>7.1f}%{u.procs:>7}{up:>9}")
+    if r.top:
+        print(paint(f"\n{'PROCESS':<18}{'MEMORY':>9}{'CPU':>8}  COMPONENT", "dim"))
+        for comm, mem, cpu, comp in r.top:
+            print(f"{comm:<18}{_mib(mem):>9}{cpu:>7.1f}%  {comp}")
+    notes = ["CPU is per core (100% = one core busy); UP AT = seconds after boot"]
+    if not r.exact:
+        notes.append("some processes aren't yours: their memory is RSS (overcounts shared pages); run with sudo")
+    for n in notes:
+        print(paint(f"note: {n}", "dim"))
 
 
 def main(argv: list[str] | None = None) -> int:

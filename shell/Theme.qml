@@ -47,7 +47,9 @@ Singleton {
     // set by nullgrid-session when there's no GPU with 3D: continuous animations cost real CPU then
     readonly property bool software: Quickshell.env("NULLGRID_SOFTWARE_RENDER") === "1"
     readonly property var durations: data.durations || ({ fast: 120, normal: 180, slow: 220 })
-    readonly property int refreshMs: data.refresh_ms || 1000
+    // Without 3D every widget update costs the compositor a software redraw (6.6% of a core at
+    // 1 s in the `make perf` VM, 3.3% at 2 s): sample at most every 2 s there.
+    readonly property int refreshMs: Math.max(data.refresh_ms || 1000, software ? 2000 : 0)
     readonly property string name: data.name || "crimson-hud"
     readonly property string mode: data.behavior ? data.behavior.default_mode : "desktop"
 

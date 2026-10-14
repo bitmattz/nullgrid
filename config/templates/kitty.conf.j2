@@ -4,6 +4,8 @@
 font_family        {{ fonts.mono }}
 font_size          {{ fonts.mono_size }}
 background_opacity {{ style.terminal_opacity }}
+# `nullgrid theme ...` reloads kitty with a signal: no config watcher process (~20 MB) per kitty
+auto_reload_config -1
 
 foreground           {{ t.foreground }}
 background           {{ t.background }}

@@ -6,6 +6,7 @@
 #   make test-shell the desktop shell + GTK/Qt apps in a headless Sway: QML errors, IPC, live restyle
 #   make splash     preview the Plymouth boot splash (X11 renderer, Docker) -> out/screens/splash-*.png
 #   make test-boot  headless boot + checks over serial (runs in Docker; no host QEMU needed)
+#   make perf       boot the ISO in a 4 GB VM, measure the idle desktop (RAM, CPU, boot) -> out/perf/report.md
 #   make test-install  install the ISO to a virtual disk, boot it (UEFI + BIOS), check it (ENCRYPT=1: LUKS)
 
 BUILDER  ?= nullgrid-builder
@@ -15,7 +16,7 @@ DOCKER    = docker run --rm $(DOCKER_TTY) -e HOST_UID=$(shell id -u) -e HOST_GID
             -v $(CURDIR):/src -v $(WORKVOL):/work $(BUILDER)
 DOCKER_TTY = $(if $(shell [ -t 0 ] && echo y),-it,)
 
-.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell splash test-boot test-boot-bios test-install shell check-host clean distclean
+.PHONY: help builder repo iso run run-bios run-gl test sounds test-shell splash test-boot test-boot-bios test-install perf shell check-host clean distclean
 
 help:
 	@sed -n 's/^#   //p' Makefile
@@ -70,6 +71,10 @@ test-boot-bios:
 test-install:
 	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e INSTALL_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
 		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/install_smoke.py $(if $(ENCRYPT),--encrypt,)
+
+perf:
+	docker run --rm -i $(KVM) -e PYTHONUNBUFFERED=1 -e BOOT_TIMEOUT -e HOST_UID=$(shell id -u) -e HOST_GID=$(shell id -g) \
+		-v $(CURDIR):/src $(BUILDER) python3 /src/tests/perf_smoke.py $(PERF_ARGS)
 
 shell: builder
 	docker run --rm -it --privileged -v $(CURDIR):/src -v $(WORKVOL):/work $(BUILDER) bash

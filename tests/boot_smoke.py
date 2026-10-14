@@ -75,6 +75,10 @@ HYPRLAND_CHECKS = [
     ("hyprctl monitors | grep -o '1600x900'", r"1600x900"),
     ("pgrep -x swaybg >/dev/null && ls ~/.cache/nullgrid/wallpaper/ | grep -c 1600x900", r"[1-9]"),
     ("hyprctl binds | grep -c 'dispatcher'", r"[1-9]\d+"),
+    # kitty shows a window instead of failing when its config has errors
+    ("pgrep -f 'kitten __show_error__' >/dev/null && echo KITTY_CONFIG_ERRORS || echo KITTY_CONFIG_OK", r"KITTY_CONFIG_OK"),
+    # no config watcher per kitty (auto_reload_config -1): only kitty's own exit helper
+    ("pgrep -fc 'kitten __watch_conf__'", r"0"),
 ]
 # Phase 7: GTK apps read their theme, icons, cursor and fonts from GSettings in the session
 TOOLKIT_CHECKS = [
